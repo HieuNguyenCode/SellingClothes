@@ -7,7 +7,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
+        <PackageReference Include="BCrypt.Net-Next" Version="4.1.0"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.14"/>
+        <PackageReference Include="Serilog.Sinks.File" Version="8.0.0-nblumhardt-02322"/>
     </ItemGroup>
 
 </Project>
