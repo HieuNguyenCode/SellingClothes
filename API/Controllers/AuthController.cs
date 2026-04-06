@@ -14,4 +14,16 @@ public class AuthController(IAuthService authService) : BaseController
     {
         return Result(await authService.LoginAsync(loginDto));
     }
+
+    [HttpPatch("RefreshToken")]
+    public async Task<IActionResult> RefreshToken([FromBody] string refreshTokenOld)
+    {
+        return Result(await authService.RefreshToken(refreshTokenOld));
+    }
+
+    [HttpPost("Register")]
+    public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
+    {
+        return Result(await authService.RegisterAsync(registerDto));
+    }
 }

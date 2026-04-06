@@ -9,7 +9,13 @@
     <ItemGroup>
         <PackageReference Include="BCrypt.Net-Next" Version="4.1.0"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.14"/>
+        <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.0.1"/>
         <PackageReference Include="Serilog.Sinks.File" Version="8.0.0-nblumhardt-02322"/>
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.1"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Infrastructure\Infrastructure.csproj"/>
     </ItemGroup>
 
 </Project>
