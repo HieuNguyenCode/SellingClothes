@@ -97,6 +97,8 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ICompanyService, CompanyService>();
+builder.Services.AddScoped<ITypeService, TypeService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
