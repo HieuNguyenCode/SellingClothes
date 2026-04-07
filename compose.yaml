@@ -1,7 +1,38 @@
 ﻿services:
-  api:
-    image: api
+  selling_clothes:
+    container_name: SellingClothes
+    image: api_image
+    restart: unless-stopped
     build:
       context: .
       dockerfile: API/Dockerfile
-
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - TZ=Asia/Ho_Chi_Minh
+      # === Database (đọc từ .env) ===
+      - ConnectionStrings__DefaultConnection=${DATABASE_CONNECTION}
+      # === JWT ===
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      # === GC Settings ===
+      - DOTNET_gcServer=0
+      - DOTNET_GCHeapHardLimitPercent=15
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./Docker/Logs:/app/Logs
+      - ./Docker/wwwroot:/app/wwwroot
+      - ./Docker/Keys:/home/app/.aspnet/DataProtection-Keys
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
