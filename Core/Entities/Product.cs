@@ -1,67 +1,65 @@
-using Type = Core.Entities.Type;
+﻿namespace Core.Entities;
 
-namespace Core.Entities;
-
-public partial class Product
+public class Product
 {
     /// <summary>
-    /// Mã định danh sản phẩm
+    ///     Mã định danh sản phẩm
     /// </summary>
     public Guid Idproduct { get; set; }
 
     /// <summary>
-    /// Tên sản phẩm
+    ///     Tên sản phẩm
     /// </summary>
     public string Name { get; set; } = null!;
 
     /// <summary>
-    /// Giá niêm yết của sản phẩm
+    ///     Giá niêm yết của sản phẩm
     /// </summary>
     public int Price { get; set; }
 
     /// <summary>
-    /// Khóa ngoại tham chiếu đến công ty/thương hiệu
+    ///     Khóa ngoại tham chiếu đến công ty/thương hiệu
     /// </summary>
     public Guid Idcompany { get; set; }
 
     /// <summary>
-    /// Khóa ngoại tham chiếu đến loại sản phẩm
+    ///     Khóa ngoại tham chiếu đến loại sản phẩm
     /// </summary>
     public Guid Idtype { get; set; }
 
     /// <summary>
-    /// Mô tả chi tiết về sản phẩm
+    ///     Mô tả chi tiết về sản phẩm
     /// </summary>
     public string? Describe { get; set; }
 
     /// <summary>
-    /// Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm
+    ///     Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm
     /// </summary>
     public string Image { get; set; } = null!;
 
     /// <summary>
-    /// Người cập nhật cuối cùng
+    ///     Người cập nhật cuối cùng
     /// </summary>
     public Guid? UpdateBy { get; set; }
 
     /// <summary>
-    /// Người tạo bản ghi
+    ///     Người tạo bản ghi
     /// </summary>
     public Guid CreateBy { get; set; }
 
     /// <summary>
-    /// Thời gian cập nhật cuối
+    ///     Thời gian cập nhật cuối
     /// </summary>
     public DateTime? UpdateAt { get; set; }
 
     /// <summary>
-    /// Thời gian tạo bản ghi
+    ///     Thời gian tạo bản ghi
     /// </summary>
     public DateTime? CreateAt { get; set; }
 
     public virtual ICollection<Color> Colors { get; set; } = new List<Color>();
 
-    public virtual ICollection<ComboProduct> ComboProducts { get; set; } = new List<ComboProduct>();
+    public virtual ICollection<Comboproduct> Comboproducts { get; set; } = new List<Comboproduct>();
 
     public virtual User CreateByNavigation { get; set; } = null!;
 
@@ -71,11 +69,11 @@ public partial class Product
 
     public virtual ICollection<Image> Images { get; set; } = new List<Image>();
 
-    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+    public virtual ICollection<Orderdetail> Orderdetails { get; set; } = new List<Orderdetail>();
 
-    public virtual ICollection<SaleProduct> SaleProducts { get; set; } = new List<SaleProduct>();
+    public virtual ICollection<Saleproduct> Saleproducts { get; set; } = new List<Saleproduct>();
 
-    public virtual ICollection<ShoppingCartItem> ShoppingCartItems { get; set; } = new List<ShoppingCartItem>();
+    public virtual ICollection<Shoppingcartitem> Shoppingcartitems { get; set; } = new List<Shoppingcartitem>();
 
     public virtual ICollection<Size> Sizes { get; set; } = new List<Size>();
 

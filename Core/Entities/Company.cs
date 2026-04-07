@@ -1,14 +1,14 @@
-namespace Core.Entities;
+﻿namespace Core.Entities;
 
-public partial class Company
+public class Company
 {
     /// <summary>
-    /// Mã định danh công ty/thương hiệu
+    ///     Mã định danh công ty/thương hiệu
     /// </summary>
     public Guid Idcompany { get; set; }
 
     /// <summary>
-    /// Tên công ty hoặc thương hiệu
+    ///     Tên công ty hoặc thương hiệu
     /// </summary>
     public string Name { get; set; } = null!;
 
