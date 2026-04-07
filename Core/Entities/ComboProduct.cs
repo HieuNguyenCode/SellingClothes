@@ -1,6 +1,6 @@
 ﻿namespace Core.Entities;
 
-public class Comboproduct
+public class ComboProduct
 {
     /// <summary>
     ///     Mã chi tiết liên kết Combo và Product
@@ -18,9 +18,9 @@ public class Comboproduct
     public Guid Idproduct { get; set; }
 
     /// <summary>
-    ///     Giá bán tổng hợp của combo
+    ///     Số lượng sản phẩm này trong combo (VD: Combo gồm 2 áo và 1 quần thì Quantity của áo là 2, của quần là 1)
     /// </summary>
-    public int Price { get; set; }
+    public int Quantity { get; set; }
 
     /// <summary>
     ///     Người cập nhật liên kết

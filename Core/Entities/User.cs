@@ -24,43 +24,45 @@ public class User
 
     public virtual ICollection<Combo> ComboCreateByNavigations { get; set; } = new List<Combo>();
 
+    public virtual ICollection<ComboProduct> ComboProductCreateByNavigations { get; set; } = new List<ComboProduct>();
+
+    public virtual ICollection<ComboProduct> ComboProductUpdateByNavigations { get; set; } = new List<ComboProduct>();
+
     public virtual ICollection<Combo> ComboUpdateByNavigations { get; set; } = new List<Combo>();
-
-    public virtual ICollection<Comboproduct> ComboproductCreateByNavigations { get; set; } = new List<Comboproduct>();
-
-    public virtual ICollection<Comboproduct> ComboproductUpdateByNavigations { get; set; } = new List<Comboproduct>();
 
     public virtual ICollection<Image> Images { get; set; } = new List<Image>();
 
     public virtual ICollection<Order> OrderCreateByNavigations { get; set; } = new List<Order>();
 
+    public virtual ICollection<OrderDetail> OrderDetailCreateByNavigations { get; set; } = new List<OrderDetail>();
+
+    public virtual ICollection<OrderDetail> OrderDetailUpdateByNavigations { get; set; } = new List<OrderDetail>();
+
     public virtual ICollection<Order> OrderIduserNavigations { get; set; } = new List<Order>();
 
     public virtual ICollection<Order> OrderUpdateByNavigations { get; set; } = new List<Order>();
-
-    public virtual ICollection<Orderdetail> OrderdetailCreateByNavigations { get; set; } = new List<Orderdetail>();
-
-    public virtual ICollection<Orderdetail> OrderdetailUpdateByNavigations { get; set; } = new List<Orderdetail>();
 
     public virtual ICollection<Product> ProductCreateByNavigations { get; set; } = new List<Product>();
 
     public virtual ICollection<Product> ProductUpdateByNavigations { get; set; } = new List<Product>();
 
-    public virtual ICollection<Salecombo> SalecomboCreateByNavigations { get; set; } = new List<Salecombo>();
+    public virtual ICollection<SaleCombo> SaleComboCreateByNavigations { get; set; } = new List<SaleCombo>();
 
-    public virtual ICollection<Salecombo> SalecomboUpdateByNavigations { get; set; } = new List<Salecombo>();
+    public virtual ICollection<SaleCombo> SaleComboUpdateByNavigations { get; set; } = new List<SaleCombo>();
 
-    public virtual ICollection<Saleproduct> SaleproductCreateByNavigations { get; set; } = new List<Saleproduct>();
+    public virtual ICollection<SaleProduct> SaleProductCreateByNavigations { get; set; } = new List<SaleProduct>();
 
-    public virtual ICollection<Saleproduct> SaleproductUpdateByNavigations { get; set; } = new List<Saleproduct>();
+    public virtual ICollection<SaleProduct> SaleProductUpdateByNavigations { get; set; } = new List<SaleProduct>();
 
-    public virtual ICollection<Shoppingcart> ShoppingcartCreateByNavigations { get; set; } = new List<Shoppingcart>();
+    public virtual ICollection<ShoppingCart> ShoppingCartCreateByNavigations { get; set; } = new List<ShoppingCart>();
 
-    public virtual ICollection<Shoppingcart> ShoppingcartIduserNavigations { get; set; } = new List<Shoppingcart>();
+    public virtual ICollection<ShoppingCart> ShoppingCartIduserNavigations { get; set; } = new List<ShoppingCart>();
 
-    public virtual ICollection<Shoppingcart> ShoppingcartUpdateByNavigations { get; set; } = new List<Shoppingcart>();
+    public virtual ICollection<ShoppingCartItem> ShoppingCartItemCreateByNavigations { get; set; } =
+        new List<ShoppingCartItem>();
 
-    public virtual ICollection<Shoppingcartitem> ShoppingcartitemCreateByNavigations { get; set; } = new List<Shoppingcartitem>();
+    public virtual ICollection<ShoppingCartItem> ShoppingCartItemUpdateByNavigations { get; set; } =
+        new List<ShoppingCartItem>();
 
-    public virtual ICollection<Shoppingcartitem> ShoppingcartitemUpdateByNavigations { get; set; } = new List<Shoppingcartitem>();
+    public virtual ICollection<ShoppingCart> ShoppingCartUpdateByNavigations { get; set; } = new List<ShoppingCart>();
 }

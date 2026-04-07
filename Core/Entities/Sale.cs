@@ -12,7 +12,7 @@ public class Sale
     /// </summary>
     public string Name { get; set; } = null!;
 
-    public virtual ICollection<Salecombo> Salecombos { get; set; } = new List<Salecombo>();
+    public virtual ICollection<SaleCombo> SaleCombos { get; set; } = new List<SaleCombo>();
 
-    public virtual ICollection<Saleproduct> Saleproducts { get; set; } = new List<Saleproduct>();
+    public virtual ICollection<SaleProduct> SaleProducts { get; set; } = new List<SaleProduct>();
 }

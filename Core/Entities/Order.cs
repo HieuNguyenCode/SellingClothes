@@ -76,7 +76,7 @@ public class Order
 
     public virtual User? IduserNavigation { get; set; }
 
-    public virtual ICollection<Orderdetail> Orderdetails { get; set; } = new List<Orderdetail>();
+    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 
     public virtual User? UpdateByNavigation { get; set; }
 }

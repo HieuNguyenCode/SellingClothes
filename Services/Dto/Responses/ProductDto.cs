@@ -9,6 +9,8 @@ public class ProductDto
     public int Price { get; set; }
 
     public int? PriceSale { get; set; }
+    
+    public string Image { get; set; } = null!;
 
     public List<string> Images { get; set; } = [];
 

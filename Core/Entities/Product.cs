@@ -59,7 +59,7 @@ public class Product
 
     public virtual ICollection<Color> Colors { get; set; } = new List<Color>();
 
-    public virtual ICollection<Comboproduct> Comboproducts { get; set; } = new List<Comboproduct>();
+    public virtual ICollection<ComboProduct> ComboProducts { get; set; } = new List<ComboProduct>();
 
     public virtual User CreateByNavigation { get; set; } = null!;
 
@@ -69,11 +69,11 @@ public class Product
 
     public virtual ICollection<Image> Images { get; set; } = new List<Image>();
 
-    public virtual ICollection<Orderdetail> Orderdetails { get; set; } = new List<Orderdetail>();
+    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 
-    public virtual ICollection<Saleproduct> Saleproducts { get; set; } = new List<Saleproduct>();
+    public virtual ICollection<SaleProduct> SaleProducts { get; set; } = new List<SaleProduct>();
 
-    public virtual ICollection<Shoppingcartitem> Shoppingcartitems { get; set; } = new List<Shoppingcartitem>();
+    public virtual ICollection<ShoppingCartItem> ShoppingCartItems { get; set; } = new List<ShoppingCartItem>();
 
     public virtual ICollection<Size> Sizes { get; set; } = new List<Size>();
 

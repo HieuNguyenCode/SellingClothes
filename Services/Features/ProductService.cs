@@ -2,13 +2,17 @@
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Services.Dto.Requests;
 using Services.Dto.Responses;
 using Services.Interfaces;
 
 namespace Services.Features;
 
-public class ProductService(AppDbContext appDbContext) : IProductService
+public class ProductService(
+    AppDbContext appDbContext,
+    ILogger<ProductService> logger
+) : IProductService
 {
     public async Task<ServiceResponse<List<ProductsDto>>> GetProductsAsync(string? search, int? page, int? pageSize)
     {
@@ -17,11 +21,9 @@ public class ProductService(AppDbContext appDbContext) : IProductService
         var query = appDbContext.Products.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
-        {
             query = query.Where(c => c.Name.Contains(search) ||
                                      c.IdtypeNavigation.Name.Contains(search) ||
                                      c.IdcompanyNavigation.Name.Contains(search));
-        }
 
         query = query.OrderBy(c => c.Name);
 
@@ -36,13 +38,11 @@ public class ProductService(AppDbContext appDbContext) : IProductService
                 Id = c.Idproduct,
                 Name = c.Name,
                 Price = c.Price,
-
-                PriceSale = c.Saleproducts
-                    .Where(s => s.StartDate <= now && s.EndDate >= now)
+                PriceSale = c.SaleProducts
+                    .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
                     .Select(s => (int?)s.Price)
                     .Min(),
-
-                Image = c.Images.Select(i => i.Url).FirstOrDefault() ?? ""
+                Image = c.Image
             })
             .ToListAsync();
 
@@ -66,13 +66,14 @@ public class ProductService(AppDbContext appDbContext) : IProductService
                 Id = p.Idproduct,
                 Name = p.Name,
                 Price = p.Price,
-                PriceSale = p.Saleproducts
-                    .Where(s => s.StartDate <= now && s.EndDate >= now)
+                PriceSale = p.SaleProducts
+                    .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
                     .Select(s => (int?)s.Price)
                     .Min(),
+                Image = p.Image,
                 Images = p.Images.Select(i => i.Url).ToList(),
 
-                // Sizes = p.Sizes.Select(s => s.Name).ToList(),
+                Sizes = p.Sizes.Select(s => s.Name).ToList(),
                 Colors = p.Colors.Select(c => c.Name).ToList(),
 
                 TypeName = p.IdtypeNavigation.Name,
@@ -81,13 +82,11 @@ public class ProductService(AppDbContext appDbContext) : IProductService
             })
             .FirstOrDefaultAsync();
         if (product == null)
-        {
             return new ServiceResponse<ProductDto>
             {
                 Status = 404,
                 Message = "Không tìm thấy sản phẩm."
             };
-        }
 
         return new ServiceResponse<ProductDto>
         {
@@ -99,111 +98,254 @@ public class ProductService(AppDbContext appDbContext) : IProductService
 
     public async Task<ServiceResponse> CreateProductAsync(ProductUpdateDto dto)
     {
-        var isNameExist = await appDbContext.Products.AnyAsync(p => p.Name == dto.Name);
-        if (isNameExist)
+        var uploadedImageUrls = new List<string>();
+
+        await using var transaction = await appDbContext.Database.BeginTransactionAsync();
+        try
         {
-            return new ServiceResponse { Status = 400, Message = "Tên sản phẩm đã tồn tại." };
-        }
+            var isNameExist = await appDbContext.Products.AnyAsync(p => p.Name == dto.Name);
+            if (isNameExist) return new ServiceResponse { Status = 400, Message = "Tên sản phẩm đã tồn tại." };
 
-        // 2. Truy xuất ID của Loại sản phẩm và Thương hiệu từ Name
-        var type = await appDbContext.Types
-            .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Name == dto.TypeName);
+            var type = await appDbContext.Types
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Name == dto.TypeName);
+            if (type == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy loại sản phẩm." };
 
-        if (type == null)
-        {
-            return new ServiceResponse { Status = 404, Message = "Không tìm thấy loại sản phẩm." };
-        }
+            var company = await appDbContext.Companies
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Name == dto.CompanyName);
+            if (company == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
 
-        var company = await appDbContext.Companies
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Name == dto.CompanyName);
+            var mainImageUrl = await SaveFileAsync(dto.Image);
+            if (string.IsNullOrEmpty(mainImageUrl))
+                return new ServiceResponse { Status = 400, Message = "Lỗi khi tải ảnh chính lên hệ thống." };
 
-        if (company == null)
-        {
-            return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
-        }
+            uploadedImageUrls.Add(mainImageUrl);
 
-        // 3. Xử lý lưu ảnh đại diện (Image chính)
-        var mainImageUrl = await SaveFileAsync(dto.Image);
-        if (string.IsNullOrEmpty(mainImageUrl))
-        {
-            return new ServiceResponse { Status = 400, Message = "Lỗi khi tải ảnh chính lên hệ thống." };
-        }
+            var newProductId = Guid.NewGuid();
 
-        var newProductId = Guid.NewGuid();
-
-        var product = new Product
-        {
-            Idproduct = newProductId,
-            Name = dto.Name,
-            Price = dto.Price,
-            Describe = dto.Description,
-            Idcompany = company.Idcompany,
-            Idtype = type.Idtype,
-            Image = mainImageUrl
-        };
-
-        await appDbContext.Products.AddAsync(product);
-
-        // 5. Xử lý lưu danh sách ảnh phụ (nếu có)
-        if (dto.Images != null && dto.Images.Any())
-        {
-            var productImages = new List<Image>();
-            foreach (var file in dto.Images)
+            var product = new Product
             {
-                var imageUrl = await SaveFileAsync(file);
-                if (!string.IsNullOrEmpty(imageUrl))
+                Idproduct = newProductId,
+                Name = dto.Name,
+                Price = dto.Price,
+                Describe = dto.Description,
+                Idcompany = company.Idcompany,
+                Idtype = type.Idtype,
+                Image = mainImageUrl
+            };
+
+            await appDbContext.Products.AddAsync(product);
+
+            if (dto.Images != null && dto.Images.Any())
+            {
+                var productImages = new List<Image>();
+                foreach (var file in dto.Images)
                 {
+                    var imageUrl = await SaveFileAsync(file);
+                    if (string.IsNullOrEmpty(imageUrl)) continue;
+                    uploadedImageUrls.Add(imageUrl);
+
                     productImages.Add(new Image
                     {
                         Url = imageUrl,
                         Idproduct = newProductId
                     });
                 }
+
+                if (productImages.Count != 0) await appDbContext.Images.AddRangeAsync(productImages);
             }
 
-            if (productImages.Count != 0)
+            if (dto.Colors.Count != 0)
             {
-                await appDbContext.Images.AddRangeAsync(productImages);
+                var productColors = (from color in dto.Colors
+                    where !string.IsNullOrEmpty(color)
+                    select new Color { Idproduct = newProductId, Name = color }).ToList();
+
+                if (productColors.Count != 0) await appDbContext.Colors.AddRangeAsync(productColors);
             }
+
+            if (dto.Sizes.Count != 0)
+            {
+                var productSizes = (from size in dto.Sizes
+                    where !string.IsNullOrEmpty(size)
+                    select new Size { Idproduct = newProductId, Name = size }).ToList();
+
+                if (productSizes.Count != 0) await appDbContext.Sizes.AddRangeAsync(productSizes);
+            }
+
+            await appDbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return new ServiceResponse
+            {
+                Status = 201,
+                Message = "Thêm sản phẩm thành công."
+            };
         }
-
-        await appDbContext.SaveChangesAsync();
-
-        return new ServiceResponse
+        catch (Exception ex)
         {
-            Status = 201,
-            Message = "Thêm sản phẩm thành công."
-        };
+            await transaction.RollbackAsync();
+
+            foreach (var physicalPath in uploadedImageUrls
+                         .Select(url => url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))
+                         .Select(relativePath => Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath))
+                         .Where(physicalPath => File.Exists(physicalPath))) File.Delete(physicalPath);
+            logger.LogError(ex, "Lỗi khi tạo sản phẩm. Đã hoàn tác toàn bộ thay đổi và xóa các file đã tải lên.");
+            return new ServiceResponse
+            {
+                Status = 500,
+                Message = "Có lỗi xảy ra trong quá trình lưu dữ liệu. Đã hoàn tác toàn bộ thay đổi."
+            };
+        }
     }
 
-    public async Task<ServiceResponse> UpdateProductAsync(Guid id, ProductUpdateDto productUpdateDto)
+    public async Task<ServiceResponse> UpdateProductAsync(Guid id, ProductUpdateDto dto)
     {
-        throw new NotImplementedException();
+        var uploadedImageUrls = new List<string>();
+        var oldImageUrlsToDeleteOnSuccess = new List<string>();
+
+        var product = await appDbContext.Products
+            .Include(p => p.Images)
+            .Include(p => p.Colors)
+            .Include(p => p.Sizes)
+            .FirstOrDefaultAsync(p => p.Idproduct == id);
+
+        if (product == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
+
+        await using var transaction = await appDbContext.Database.BeginTransactionAsync();
+        try
+        {
+            var isNameExist = await appDbContext.Products.AnyAsync(p => p.Name == dto.Name && p.Idproduct != id);
+            if (isNameExist) return new ServiceResponse { Status = 400, Message = "Tên sản phẩm đã tồn tại." };
+
+            var type = await appDbContext.Types
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Name == dto.TypeName);
+            if (type == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy loại sản phẩm." };
+
+            var company = await appDbContext.Companies
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Name == dto.CompanyName);
+            if (company == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
+
+            product.Name = dto.Name;
+            product.Price = dto.Price;
+            product.Describe = dto.Description;
+            product.Idcompany = company.Idcompany;
+            product.Idtype = type.Idtype;
+
+            var newMainImageUrl = await SaveFileAsync(dto.Image);
+            if (string.IsNullOrEmpty(newMainImageUrl))
+                return new ServiceResponse { Status = 400, Message = "Lỗi khi tải ảnh chính lên hệ thống." };
+
+            uploadedImageUrls.Add(newMainImageUrl);
+            oldImageUrlsToDeleteOnSuccess.Add(product.Image);
+            product.Image = newMainImageUrl;
+
+
+            if (dto.Images != null && dto.Images.Any())
+            {
+                if (product.Images.Any())
+                {
+                    oldImageUrlsToDeleteOnSuccess.AddRange(product.Images.Select(i => i.Url));
+                    appDbContext.Images.RemoveRange(product.Images);
+                }
+
+                var productImages = new List<Image>();
+                foreach (var file in dto.Images)
+                {
+                    var imageUrl = await SaveFileAsync(file);
+                    if (string.IsNullOrEmpty(imageUrl)) continue;
+                    uploadedImageUrls.Add(imageUrl);
+
+                    productImages.Add(new Image
+                    {
+                        Url = imageUrl,
+                        Idproduct = id
+                    });
+                }
+
+                if (productImages.Count != 0) await appDbContext.Images.AddRangeAsync(productImages);
+            }
+
+            if (product.Colors.Any()) appDbContext.Colors.RemoveRange(product.Colors);
+            if (dto.Colors.Count != 0)
+            {
+                var productColors = (from color in dto.Colors
+                    where !string.IsNullOrEmpty(color)
+                    select new Color { Idproduct = id, Name = color }).ToList();
+
+                if (productColors.Count != 0) await appDbContext.Colors.AddRangeAsync(productColors);
+            }
+
+            if (product.Sizes.Count != 0) appDbContext.Sizes.RemoveRange(product.Sizes);
+            if (dto.Sizes.Count != 0)
+            {
+                var productSizes = (from size in dto.Sizes
+                    where !string.IsNullOrEmpty(size)
+                    select new Size { Idproduct = id, Name = size }).ToList();
+
+                if (productSizes.Count != 0) await appDbContext.Sizes.AddRangeAsync(productSizes);
+            }
+
+            await appDbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            foreach (var physicalPath in oldImageUrlsToDeleteOnSuccess
+                         .Select(url => url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))
+                         .Select(relativePath => Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath))
+                         .Where(physicalPath => File.Exists(physicalPath))) File.Delete(physicalPath);
+
+            return new ServiceResponse
+            {
+                Status = 200,
+                Message = "Cập nhật sản phẩm thành công."
+            };
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+
+            foreach (var physicalPath in uploadedImageUrls
+                         .Select(url => url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))
+                         .Select(relativePath => Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath))
+                         .Where(physicalPath => File.Exists(physicalPath))) File.Delete(physicalPath);
+
+            logger.LogError(ex, "Lỗi khi cập nhật sản phẩm. Đã hoàn tác toàn bộ thay đổi và xóa các file đã tải lên.");
+            return new ServiceResponse
+            {
+                Status = 500,
+                Message = "Có lỗi xảy ra trong quá trình lưu dữ liệu. Đã hoàn tác toàn bộ thay đổi."
+            };
+        }
     }
 
     public async Task<ServiceResponse> DeleteProductAsync(Guid id)
     {
-        throw new NotImplementedException();
+        var product = await appDbContext.Products
+            .Include(p => p.Images)
+            .FirstOrDefaultAsync(p => p.Idproduct == id);
+        if (product == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
+        appDbContext.Products.Remove(product);
+        await appDbContext.SaveChangesAsync();
+        return new ServiceResponse
+        {
+            Status = 200,
+            Message = "Xóa sản phẩm thành công."
+        };
     }
 
-// ====================================================================
-// HÀM HỖ TRỢ LƯU FILE 
-// ====================================================================
+    // ====================================================================
+    // HÀM HỖ TRỢ LƯU FILE 
+    // ====================================================================
     private static async Task<string> SaveFileAsync(IFormFile? file)
     {
-        if (file == null || file.Length == 0)
-        {
-            return string.Empty;
-        }
+        if (file == null || file.Length == 0) return string.Empty;
 
         var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
 
-        if (!Directory.Exists(folderPath))
-        {
-            Directory.CreateDirectory(folderPath);
-        }
+        if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
         var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
         var filePath = Path.Combine(folderPath, fileName);

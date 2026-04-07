@@ -1,6 +1,6 @@
 ﻿namespace Core.Entities;
 
-public class Saleproduct
+public class SaleProduct
 {
     /// <summary>
     ///     Mã chi tiết áp dụng khuyến mãi cho sản phẩm

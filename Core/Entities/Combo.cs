@@ -15,7 +15,12 @@ public class Combo
     /// <summary>
     ///     Giá bán tổng hợp của combo
     /// </summary>
-    public decimal Price { get; set; }
+    public int Price { get; set; }
+
+    /// <summary>
+    ///     Đường dẫn lưu trữ file hình ảnh đại diện combo
+    /// </summary>
+    public string Image { get; set; } = null!;
 
     /// <summary>
     ///     Người cập nhật cuối cùng
@@ -37,15 +42,15 @@ public class Combo
     /// </summary>
     public DateTime? CreateAt { get; set; }
 
-    public virtual ICollection<Comboproduct> Comboproducts { get; set; } = new List<Comboproduct>();
+    public virtual ICollection<ComboProduct> ComboProducts { get; set; } = new List<ComboProduct>();
 
     public virtual User CreateByNavigation { get; set; } = null!;
 
-    public virtual ICollection<Orderdetail> Orderdetails { get; set; } = new List<Orderdetail>();
+    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 
-    public virtual ICollection<Salecombo> Salecombos { get; set; } = new List<Salecombo>();
+    public virtual ICollection<SaleCombo> SaleCombos { get; set; } = new List<SaleCombo>();
 
-    public virtual ICollection<Shoppingcartitem> Shoppingcartitems { get; set; } = new List<Shoppingcartitem>();
+    public virtual ICollection<ShoppingCartItem> ShoppingCartItems { get; set; } = new List<ShoppingCartItem>();
 
     public virtual User? UpdateByNavigation { get; set; }
 }

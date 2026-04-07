@@ -63,7 +63,7 @@ builder.Services.AddAuthentication(options =>
         {
             OnChallenge = async context => // Thêm từ khóa 'async'
             {
-                context.HandleResponse();// Ngăn mặc định
+                context.HandleResponse(); // Ngăn mặc định
 
                 context.Response.StatusCode = 401;
                 context.Response.ContentType = "application/json";
@@ -99,6 +99,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<ITypeService, TypeService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IComboService, ComboService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
@@ -139,5 +141,6 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.UseStaticFiles();
 
 app.Run();

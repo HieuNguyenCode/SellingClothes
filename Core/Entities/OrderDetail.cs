@@ -1,6 +1,6 @@
 ﻿namespace Core.Entities;
 
-public class Orderdetail
+public class OrderDetail
 {
     /// <summary>
     ///     Mã chi tiết từng dòng trong hóa đơn
