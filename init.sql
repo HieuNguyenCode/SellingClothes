@@ -4,28 +4,32 @@ USE SellingClothes;
     
 CREATE TABLE IF NOT EXISTS users (
     IDUser CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh duy nhất của người dùng',
-    UserName VARCHAR(255) NOT NULL COMMENT 'Tên đăng nhập hoặc họ tên người dùng',
+    UserName VARCHAR(255) NOT NULL UNIQUE COMMENT 'Tên đăng nhập hoặc họ tên người dùng',
     Password VARCHAR(255) NOT NULL COMMENT 'Mật khẩu đăng nhập (nên được băm/hash)',
-    Role ENUM('admin', 'customer') NOT NULL DEFAULT 'customer' COMMENT 'Vai trò của người dùng trên hệ thống'
+    Role ENUM('admin', 'customer') NOT NULL DEFAULT 'customer' COMMENT 'Vai trò của người dùng trên hệ thống',
+    INDEX idx_username (UserName)
 );
 
 CREATE TABLE IF NOT EXISTS Company (
     IDCompany CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh công ty/thương hiệu',
-    Name VARCHAR(255) NOT NULL COMMENT 'Tên công ty hoặc thương hiệu'
+    Name VARCHAR(255) NOT NULL UNIQUE COMMENT 'Tên công ty hoặc thương hiệu',
+    INDEX idx_company_name (Name)
 );
 
 CREATE TABLE IF NOT EXISTS Type (
     IDType CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh loại sản phẩm (danh mục)',
-    Name VARCHAR(255) NOT NULL COMMENT 'Tên loại sản phẩm (VD: Áo khoác, Quần Jean)'
+    Name VARCHAR(255) NOT NULL UNIQUE COMMENT 'Tên loại sản phẩm (VD: Áo khoác, Quần Jean)',
+    INDEX idx_type_name (Name)
 );
 
 CREATE TABLE IF NOT EXISTS Product (
     IDProduct CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh sản phẩm',
-    Name VARCHAR(255) NOT NULL COMMENT 'Tên sản phẩm',
-    Price DECIMAL(10, 2) NOT NULL COMMENT 'Giá niêm yết của sản phẩm',
+    Name VARCHAR(255) NOT NULL COMMENT 'Tên sản phẩm' UNIQUE,
+    Price INT NOT NULL COMMENT 'Giá niêm yết của sản phẩm',
     IDCompany CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu đến công ty/thương hiệu',
     IDType CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu đến loại sản phẩm',
     `Describe` TEXT COMMENT 'Mô tả chi tiết về sản phẩm',
+    Image VARCHAR(255) NOT NULL COMMENT 'Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm',
     
     UpdateBy CHAR(36) COMMENT 'Người cập nhật cuối cùng',
     CreateBy CHAR(36) NOT NULL COMMENT 'Người tạo bản ghi',
@@ -34,13 +38,24 @@ CREATE TABLE IF NOT EXISTS Product (
     CONSTRAINT fk_product_com FOREIGN KEY (IDCompany) REFERENCES Company(IDCompany),
     CONSTRAINT fk_product_type FOREIGN KEY (IDType) REFERENCES Type(IDType),
     CONSTRAINT fk_product_user_update FOREIGN KEY (UpdateBy) REFERENCES users(IDUser),
-    CONSTRAINT fk_product_user_create FOREIGN KEY (CreateBy) REFERENCES users(IDUser)
+    CONSTRAINT fk_product_user_create FOREIGN KEY (CreateBy) REFERENCES users(IDUser),
+    INDEX idx_product_name (Name)
+);
+
+CREATE TABLE IF NOT EXISTS Size (
+    IDSize CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh kích cỡ',
+    IDProduct CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu đến sản phẩm',
+    Name VARCHAR(255) NOT NULL COMMENT 'Tên kích cỡ (VD: S, M, L, XL)',
+    
+    CONSTRAINT fk_size_product FOREIGN KEY (IDProduct) REFERENCES Product(IDProduct)
 );
 
 CREATE TABLE IF NOT EXISTS Color (
     IDColor CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh màu sắc',
+    IDProduct CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu đến sản phẩm',
     Name VARCHAR(255) NOT NULL COMMENT 'Tên màu sắc (VD: Đen, Trắng, Đỏ)',
-    Price INT NOT NULL COMMENT 'Mức giá chênh lệch hoặc phụ phí áp dụng cho màu này'
+    
+    CONSTRAINT fk_color_product FOREIGN KEY (IDProduct) REFERENCES Product(IDProduct)
 );
 
 CREATE TABLE IF NOT EXISTS Image (
@@ -53,7 +68,6 @@ CREATE TABLE IF NOT EXISTS Image (
     CONSTRAINT fk_img_product FOREIGN KEY (IDProduct) REFERENCES Product(IDProduct),
     CONSTRAINT fk_img_user FOREIGN KEY (CreateBy) REFERENCES users(IDUser)
 );
-
 CREATE TABLE IF NOT EXISTS Combo (
     IDCombo CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh combo sản phẩm',
     Name VARCHAR(255) NOT NULL COMMENT 'Tên gọi của combo',
@@ -71,7 +85,7 @@ CREATE TABLE IF NOT EXISTS ComboProduct (
     IDComboProduct CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã chi tiết liên kết Combo và Product',
     IDCombo CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu đến Combo',
     IDProduct CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu đến Product nằm trong Combo',
-    
+    Price INT NOT NULL COMMENT 'Giá bán tổng hợp của combo',
     UpdateBy CHAR(36) COMMENT 'Người cập nhật liên kết',
     CreateBy CHAR(36) NOT NULL COMMENT 'Người tạo liên kết',
     UpdateAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật cuối',
@@ -91,6 +105,7 @@ CREATE TABLE IF NOT EXISTS SaleProduct (
     IDSaleProduct CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã chi tiết áp dụng khuyến mãi cho sản phẩm',
     IDSale CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu chương trình khuyến mãi',
     IDProduct CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu sản phẩm được giảm giá',
+    Price INT NOT NULL COMMENT 'Giá bán sau khi áp dụng giảm giá (giá cố định trong suốt thời gian khuyến mãi)',
     StartDate DATETIME NOT NULL COMMENT 'Thời gian bắt đầu áp dụng giảm giá',
     EndDate DATETIME NOT NULL COMMENT 'Thời gian kết thúc giảm giá',
     
@@ -125,7 +140,7 @@ CREATE TABLE IF NOT EXISTS ShoppingCart (
     IDShoppingCart CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh giỏ hàng',
     IDUser CHAR(36) NULL COMMENT 'Khóa ngoại định danh người dùng (NULL nếu chưa đăng nhập)',
     SessionID VARCHAR(255) NULL COMMENT 'Mã phiên làm việc lưu trên trình duyệt cho khách vãng lai',
-    TotalPrice DECIMAL(10, 2) NOT NULL DEFAULT 0 COMMENT 'Tổng giá trị hiện tại của giỏ hàng',
+    TotalPrice INT NOT NULL DEFAULT 0 COMMENT 'Tổng giá trị hiện tại của giỏ hàng',
     
     UpdateBy CHAR(36) NULL COMMENT 'Người cập nhật cuối cùng',
     CreateBy CHAR(36) NULL COMMENT 'Người tạo giỏ hàng',
@@ -143,8 +158,9 @@ CREATE TABLE IF NOT EXISTS ShoppingCartItem (
     IDProduct CHAR(36) NULL COMMENT 'Mã sản phẩm được chọn (NULL nếu chọn Combo)',
     IDCombo CHAR(36) NULL COMMENT 'Mã combo được chọn (NULL nếu chọn Product)',
     IDColor CHAR(36) NULL COMMENT 'Mã màu sắc sản phẩm được chọn',
+    IDSize CHAR(36) NULL COMMENT 'Mã kích cỡ sản phẩm được chọn (nếu có)',
     Quantity INT NOT NULL DEFAULT 1 COMMENT 'Số lượng sản phẩm/combo muốn mua',
-    UnitPrice DECIMAL(10, 2) NOT NULL COMMENT 'Đơn giá lưu cứng tại thời điểm khách thêm vào giỏ',
+    UnitPrice INT NOT NULL COMMENT 'Đơn giá lưu cứng tại thời điểm khách thêm vào giỏ',
     
     UpdateBy CHAR(36) NULL COMMENT 'Người cập nhật số lượng/món hàng',
     CreateBy CHAR(36) NULL COMMENT 'Người thêm món hàng vào giỏ',
@@ -157,6 +173,7 @@ CREATE TABLE IF NOT EXISTS ShoppingCartItem (
     CONSTRAINT fk_ci_color FOREIGN KEY (IDColor) REFERENCES Color(IDColor),
     CONSTRAINT fk_ci_user_update FOREIGN KEY (UpdateBy) REFERENCES users(IDUser),
     CONSTRAINT fk_ci_user_create FOREIGN KEY (CreateBy) REFERENCES users(IDUser),
+    CONSTRAINT fk_ci_size FOREIGN KEY (IDSize) REFERENCES Size(IDSize),
     
         CONSTRAINT CHK_CartItem_Type CHECK (
         (IDProduct IS NOT NULL AND IDCombo IS NULL) OR 
@@ -173,7 +190,7 @@ CREATE TABLE IF NOT EXISTS Orders (
     PhoneNumber VARCHAR(20) NOT NULL COMMENT 'Số điện thoại liên hệ nhận hàng',
     ShippingAddress TEXT NOT NULL COMMENT 'Địa chỉ giao hàng chi tiết',
     
-    TotalPrice DECIMAL(10, 2) NOT NULL COMMENT 'Tổng số tiền khách phải thanh toán cho đơn này',
+    TotalPrice INT NOT NULL COMMENT 'Tổng số tiền khách phải thanh toán cho đơn này',
     
     OrderStatus ENUM('Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled') DEFAULT 'Pending' COMMENT 'Tiến trình xử lý đơn hàng',
     PaymentMethod ENUM('COD', 'BankTransfer', 'CreditCard') DEFAULT 'COD' COMMENT 'Phương thức khách hàng chọn thanh toán',
@@ -195,10 +212,11 @@ CREATE TABLE IF NOT EXISTS OrderDetail (
     IDProduct CHAR(36) NULL COMMENT 'Sản phẩm đã mua (NULL nếu là Combo)',
     IDCombo CHAR(36) NULL COMMENT 'Combo đã mua (NULL nếu là Product)',
     IDColor CHAR(36) NULL COMMENT 'Màu sắc cụ thể của sản phẩm khách đã chọn',
+    IDSize CHAR(36) NULL COMMENT 'Kích cỡ cụ thể của sản phẩm khách đã chọn (nếu có)',
     
     Quantity INT NOT NULL DEFAULT 1 COMMENT 'Số lượng mua',
-    UnitPrice DECIMAL(10, 2) NOT NULL COMMENT 'Đơn giá cố định lúc xuất hóa đơn (không thay đổi nếu giá gốc đổi)',
-    SubTotal DECIMAL(10, 2) AS (Quantity * UnitPrice) STORED COMMENT 'Cột tính toán tự động: Thành tiền = Số lượng x Đơn giá',
+    UnitPrice INT NOT NULL COMMENT 'Đơn giá cố định lúc xuất hóa đơn (không thay đổi nếu giá gốc đổi)',
+    SubTotal INT AS (Quantity * UnitPrice) STORED COMMENT 'Cột tính toán tự động: Thành tiền = Số lượng x Đơn giá',
     
     UpdateBy CHAR(36) NULL COMMENT 'Người cập nhật chi tiết',
     CreateBy CHAR(36) NULL COMMENT 'Người tạo chi tiết',
@@ -211,6 +229,7 @@ CREATE TABLE IF NOT EXISTS OrderDetail (
     CONSTRAINT fk_od_color FOREIGN KEY (IDColor) REFERENCES Color(IDColor),
     CONSTRAINT fk_od_user_update FOREIGN KEY (UpdateBy) REFERENCES users(IDUser),
     CONSTRAINT fk_od_user_create FOREIGN KEY (CreateBy) REFERENCES users(IDUser),
+    CONSTRAINT fk_od_size FOREIGN KEY (IDSize) REFERENCES Size(IDSize),
     
         CONSTRAINT CHK_OrderDetail_Type CHECK (
         (IDProduct IS NOT NULL AND IDCombo IS NULL) OR 

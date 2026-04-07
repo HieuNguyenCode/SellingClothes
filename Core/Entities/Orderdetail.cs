@@ -28,6 +28,11 @@ public class Orderdetail
     public Guid? Idcolor { get; set; }
 
     /// <summary>
+    ///     Kích cỡ cụ thể của sản phẩm khách đã chọn (nếu có)
+    /// </summary>
+    public Guid? Idsize { get; set; }
+
+    /// <summary>
     ///     Số lượng mua
     /// </summary>
     public int Quantity { get; set; }
@@ -35,12 +40,12 @@ public class Orderdetail
     /// <summary>
     ///     Đơn giá cố định lúc xuất hóa đơn (không thay đổi nếu giá gốc đổi)
     /// </summary>
-    public decimal UnitPrice { get; set; }
+    public int UnitPrice { get; set; }
 
     /// <summary>
     ///     Cột tính toán tự động: Thành tiền = Số lượng x Đơn giá
     /// </summary>
-    public decimal? SubTotal { get; set; }
+    public int? SubTotal { get; set; }
 
     /// <summary>
     ///     Người cập nhật chi tiết
@@ -71,6 +76,8 @@ public class Orderdetail
     public virtual Order IdorderNavigation { get; set; } = null!;
 
     public virtual Product? IdproductNavigation { get; set; }
+
+    public virtual Size? IdsizeNavigation { get; set; }
 
     public virtual User? UpdateByNavigation { get; set; }
 }

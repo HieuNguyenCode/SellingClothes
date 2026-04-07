@@ -1,5 +1,6 @@
 ﻿using Core.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Type = Core.Entities.Type;
 
 namespace Infrastructure.Data;
@@ -41,9 +42,16 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Shoppingcartitem> Shoppingcartitems { get; set; }
 
+    public virtual DbSet<Size> Sizes { get; set; }
+
     public virtual DbSet<Type> Types { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseMySql("server=localhost;database=SellingClothes;user=root;password=password124",
+            ServerVersion.Parse("12.2.2-mariadb"));
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,15 +65,22 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("color");
 
+            entity.HasIndex(e => e.Idproduct, "fk_color_product");
+
             entity.Property(e => e.Idcolor)
                 .HasComment("Mã định danh màu sắc")
                 .HasColumnName("IDColor");
+            entity.Property(e => e.Idproduct)
+                .HasComment("Khóa ngoại tham chiếu đến sản phẩm")
+                .HasColumnName("IDProduct");
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasComment("Tên màu sắc (VD: Đen, Trắng, Đỏ)");
-            entity.Property(e => e.Price)
-                .HasComment("Mức giá chênh lệch hoặc phụ phí áp dụng cho màu này")
-                .HasColumnType("int(11)");
+
+            entity.HasOne(d => d.IdproductNavigation).WithMany(p => p.Colors)
+                .HasForeignKey(d => d.Idproduct)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_color_product");
         });
 
         modelBuilder.Entity<Combo>(entity =>
@@ -137,6 +152,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Idproduct)
                 .HasComment("Khóa ngoại tham chiếu đến Product nằm trong Combo")
                 .HasColumnName("IDProduct");
+            entity.Property(e => e.Price)
+                .HasComment("Giá bán tổng hợp của combo")
+                .HasColumnType("int(11)");
             entity.Property(e => e.UpdateAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("current_timestamp()")
@@ -170,12 +188,12 @@ public partial class AppDbContext : DbContext
 
             entity.ToTable("company");
 
+            entity.HasIndex(e => e.Name, "idx_company_name").IsUnique();
+
             entity.Property(e => e.Idcompany)
                 .HasComment("Mã định danh công ty/thương hiệu")
                 .HasColumnName("IDCompany");
-            entity.Property(e => e.Name)
-                .HasMaxLength(255)
-                .HasComment("Tên công ty hoặc thương hiệu");
+            entity.Property(e => e.Name).HasComment("Tên công ty hoặc thương hiệu");
         });
 
         modelBuilder.Entity<Image>(entity =>
@@ -264,8 +282,8 @@ public partial class AppDbContext : DbContext
                 .HasComment("Địa chỉ giao hàng chi tiết")
                 .HasColumnType("text");
             entity.Property(e => e.TotalPrice)
-                .HasPrecision(10, 2)
-                .HasComment("Tổng số tiền khách phải thanh toán cho đơn này");
+                .HasComment("Tổng số tiền khách phải thanh toán cho đơn này")
+                .HasColumnType("int(11)");
             entity.Property(e => e.UpdateAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("current_timestamp()")
@@ -300,6 +318,8 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.Idproduct, "fk_od_product");
 
+            entity.HasIndex(e => e.Idsize, "fk_od_size");
+
             entity.HasIndex(e => e.CreateBy, "fk_od_user_create");
 
             entity.HasIndex(e => e.UpdateBy, "fk_od_user_update");
@@ -324,17 +344,20 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Idproduct)
                 .HasComment("Sản phẩm đã mua (NULL nếu là Combo)")
                 .HasColumnName("IDProduct");
+            entity.Property(e => e.Idsize)
+                .HasComment("Kích cỡ cụ thể của sản phẩm khách đã chọn (nếu có)")
+                .HasColumnName("IDSize");
             entity.Property(e => e.Quantity)
                 .HasDefaultValueSql("'1'")
                 .HasComment("Số lượng mua")
                 .HasColumnType("int(11)");
             entity.Property(e => e.SubTotal)
-                .HasPrecision(10, 2)
                 .HasComputedColumnSql("`Quantity` * `UnitPrice`", true)
-                .HasComment("Cột tính toán tự động: Thành tiền = Số lượng x Đơn giá");
+                .HasComment("Cột tính toán tự động: Thành tiền = Số lượng x Đơn giá")
+                .HasColumnType("int(11)");
             entity.Property(e => e.UnitPrice)
-                .HasPrecision(10, 2)
-                .HasComment("Đơn giá cố định lúc xuất hóa đơn (không thay đổi nếu giá gốc đổi)");
+                .HasComment("Đơn giá cố định lúc xuất hóa đơn (không thay đổi nếu giá gốc đổi)")
+                .HasColumnType("int(11)");
             entity.Property(e => e.UpdateAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("current_timestamp()")
@@ -363,6 +386,10 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.Idproduct)
                 .HasConstraintName("fk_od_product");
 
+            entity.HasOne(d => d.IdsizeNavigation).WithMany(p => p.Orderdetails)
+                .HasForeignKey(d => d.Idsize)
+                .HasConstraintName("fk_od_size");
+
             entity.HasOne(d => d.UpdateByNavigation).WithMany(p => p.OrderdetailUpdateByNavigations)
                 .HasForeignKey(d => d.UpdateBy)
                 .HasConstraintName("fk_od_user_update");
@@ -382,6 +409,8 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.UpdateBy, "fk_product_user_update");
 
+            entity.HasIndex(e => e.Name, "idx_product_name").IsUnique();
+
             entity.Property(e => e.Idproduct)
                 .HasComment("Mã định danh sản phẩm")
                 .HasColumnName("IDProduct");
@@ -399,12 +428,13 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Idtype)
                 .HasComment("Khóa ngoại tham chiếu đến loại sản phẩm")
                 .HasColumnName("IDType");
-            entity.Property(e => e.Name)
+            entity.Property(e => e.Image)
                 .HasMaxLength(255)
-                .HasComment("Tên sản phẩm");
+                .HasComment("Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm");
+            entity.Property(e => e.Name).HasComment("Tên sản phẩm");
             entity.Property(e => e.Price)
-                .HasPrecision(10, 2)
-                .HasComment("Giá niêm yết của sản phẩm");
+                .HasComment("Giá niêm yết của sản phẩm")
+                .HasColumnType("int(11)");
             entity.Property(e => e.UpdateAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("current_timestamp()")
@@ -538,6 +568,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Idsale)
                 .HasComment("Khóa ngoại tham chiếu chương trình khuyến mãi")
                 .HasColumnName("IDSale");
+            entity.Property(e => e.Price)
+                .HasComment("Giá bán sau khi áp dụng giảm giá (giá cố định trong suốt thời gian khuyến mãi)")
+                .HasColumnType("int(11)");
             entity.Property(e => e.StartDate)
                 .HasComment("Thời gian bắt đầu áp dụng giảm giá")
                 .HasColumnType("datetime");
@@ -596,8 +629,8 @@ public partial class AppDbContext : DbContext
                 .HasComment("Mã phiên làm việc lưu trên trình duyệt cho khách vãng lai")
                 .HasColumnName("SessionID");
             entity.Property(e => e.TotalPrice)
-                .HasPrecision(10, 2)
-                .HasComment("Tổng giá trị hiện tại của giỏ hàng");
+                .HasComment("Tổng giá trị hiện tại của giỏ hàng")
+                .HasColumnType("int(11)");
             entity.Property(e => e.UpdateAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("current_timestamp()")
@@ -632,6 +665,8 @@ public partial class AppDbContext : DbContext
 
             entity.HasIndex(e => e.Idproduct, "fk_ci_product");
 
+            entity.HasIndex(e => e.Idsize, "fk_ci_size");
+
             entity.HasIndex(e => e.CreateBy, "fk_ci_user_create");
 
             entity.HasIndex(e => e.UpdateBy, "fk_ci_user_update");
@@ -656,13 +691,16 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.IdshoppingCart)
                 .HasComment("Khóa ngoại thuộc về giỏ hàng nào")
                 .HasColumnName("IDShoppingCart");
+            entity.Property(e => e.Idsize)
+                .HasComment("Mã kích cỡ sản phẩm được chọn (nếu có)")
+                .HasColumnName("IDSize");
             entity.Property(e => e.Quantity)
                 .HasDefaultValueSql("'1'")
                 .HasComment("Số lượng sản phẩm/combo muốn mua")
                 .HasColumnType("int(11)");
             entity.Property(e => e.UnitPrice)
-                .HasPrecision(10, 2)
-                .HasComment("Đơn giá lưu cứng tại thời điểm khách thêm vào giỏ");
+                .HasComment("Đơn giá lưu cứng tại thời điểm khách thêm vào giỏ")
+                .HasColumnType("int(11)");
             entity.Property(e => e.UpdateAt)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("current_timestamp()")
@@ -691,23 +729,51 @@ public partial class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_ci_cart");
 
+            entity.HasOne(d => d.IdsizeNavigation).WithMany(p => p.Shoppingcartitems)
+                .HasForeignKey(d => d.Idsize)
+                .HasConstraintName("fk_ci_size");
+
             entity.HasOne(d => d.UpdateByNavigation).WithMany(p => p.ShoppingcartitemUpdateByNavigations)
                 .HasForeignKey(d => d.UpdateBy)
                 .HasConstraintName("fk_ci_user_update");
+        });
+
+        modelBuilder.Entity<Size>(entity =>
+        {
+            entity.HasKey(e => e.Idsize).HasName("PRIMARY");
+
+            entity.ToTable("size");
+
+            entity.HasIndex(e => e.Idproduct, "fk_size_product");
+
+            entity.Property(e => e.Idsize)
+                .HasComment("Mã định danh kích cỡ")
+                .HasColumnName("IDSize");
+            entity.Property(e => e.Idproduct)
+                .HasComment("Khóa ngoại tham chiếu đến sản phẩm")
+                .HasColumnName("IDProduct");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasComment("Tên kích cỡ (VD: S, M, L, XL)");
+
+            entity.HasOne(d => d.IdproductNavigation).WithMany(p => p.Sizes)
+                .HasForeignKey(d => d.Idproduct)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_size_product");
         });
 
         modelBuilder.Entity<Type>(entity =>
         {
             entity.HasKey(e => e.Idtype).HasName("PRIMARY");
 
-            entity.ToTable("type");
+            ((EntityTypeBuilder)entity).ToTable("type");
+
+            entity.HasIndex(e => e.Name, "idx_type_name").IsUnique();
 
             entity.Property(e => e.Idtype)
                 .HasComment("Mã định danh loại sản phẩm (danh mục)")
                 .HasColumnName("IDType");
-            entity.Property(e => e.Name)
-                .HasMaxLength(255)
-                .HasComment("Tên loại sản phẩm (VD: Áo khoác, Quần Jean)");
+            entity.Property(e => e.Name).HasComment("Tên loại sản phẩm (VD: Áo khoác, Quần Jean)");
         });
 
         modelBuilder.Entity<User>(entity =>
@@ -715,6 +781,8 @@ public partial class AppDbContext : DbContext
             entity.HasKey(e => e.Iduser).HasName("PRIMARY");
 
             entity.ToTable("users");
+
+            entity.HasIndex(e => e.UserName, "idx_username").IsUnique();
 
             entity.Property(e => e.Iduser)
                 .HasComment("Mã định danh duy nhất của người dùng")
@@ -726,9 +794,7 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValueSql("'customer'")
                 .HasComment("Vai trò của người dùng trên hệ thống")
                 .HasColumnType("enum('admin','customer')");
-            entity.Property(e => e.UserName)
-                .HasMaxLength(255)
-                .HasComment("Tên đăng nhập hoặc họ tên người dùng");
+            entity.Property(e => e.UserName).HasComment("Tên đăng nhập hoặc họ tên người dùng");
         });
 
         OnModelCreatingPartial(modelBuilder);

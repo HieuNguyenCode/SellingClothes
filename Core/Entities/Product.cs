@@ -15,7 +15,7 @@ public class Product
     /// <summary>
     ///     Giá niêm yết của sản phẩm
     /// </summary>
-    public decimal Price { get; set; }
+    public int Price { get; set; }
 
     /// <summary>
     ///     Khóa ngoại tham chiếu đến công ty/thương hiệu
@@ -31,6 +31,11 @@ public class Product
     ///     Mô tả chi tiết về sản phẩm
     /// </summary>
     public string? Describe { get; set; }
+
+    /// <summary>
+    ///     Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm
+    /// </summary>
+    public string Image { get; set; } = null!;
 
     /// <summary>
     ///     Người cập nhật cuối cùng
@@ -52,6 +57,8 @@ public class Product
     /// </summary>
     public DateTime? CreateAt { get; set; }
 
+    public virtual ICollection<Color> Colors { get; set; } = new List<Color>();
+
     public virtual ICollection<Comboproduct> Comboproducts { get; set; } = new List<Comboproduct>();
 
     public virtual User CreateByNavigation { get; set; } = null!;
@@ -67,6 +74,8 @@ public class Product
     public virtual ICollection<Saleproduct> Saleproducts { get; set; } = new List<Saleproduct>();
 
     public virtual ICollection<Shoppingcartitem> Shoppingcartitems { get; set; } = new List<Shoppingcartitem>();
+
+    public virtual ICollection<Size> Sizes { get; set; } = new List<Size>();
 
     public virtual User? UpdateByNavigation { get; set; }
 }

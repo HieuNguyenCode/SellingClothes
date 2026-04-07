@@ -18,6 +18,11 @@ public class Comboproduct
     public Guid Idproduct { get; set; }
 
     /// <summary>
+    ///     Giá bán tổng hợp của combo
+    /// </summary>
+    public int Price { get; set; }
+
+    /// <summary>
     ///     Người cập nhật liên kết
     /// </summary>
     public Guid? UpdateBy { get; set; }

@@ -18,6 +18,11 @@ public class Saleproduct
     public Guid Idproduct { get; set; }
 
     /// <summary>
+    ///     Giá bán sau khi áp dụng giảm giá (giá cố định trong suốt thời gian khuyến mãi)
+    /// </summary>
+    public int Price { get; set; }
+
+    /// <summary>
     ///     Thời gian bắt đầu áp dụng giảm giá
     /// </summary>
     public DateTime StartDate { get; set; }

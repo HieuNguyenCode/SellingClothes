@@ -35,7 +35,7 @@ public class Order
     /// <summary>
     ///     Tổng số tiền khách phải thanh toán cho đơn này
     /// </summary>
-    public decimal TotalPrice { get; set; }
+    public int TotalPrice { get; set; }
 
     /// <summary>
     ///     Tiến trình xử lý đơn hàng

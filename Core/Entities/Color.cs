@@ -8,14 +8,16 @@ public class Color
     public Guid Idcolor { get; set; }
 
     /// <summary>
+    ///     Khóa ngoại tham chiếu đến sản phẩm
+    /// </summary>
+    public Guid Idproduct { get; set; }
+
+    /// <summary>
     ///     Tên màu sắc (VD: Đen, Trắng, Đỏ)
     /// </summary>
     public string Name { get; set; } = null!;
 
-    /// <summary>
-    ///     Mức giá chênh lệch hoặc phụ phí áp dụng cho màu này
-    /// </summary>
-    public int Price { get; set; }
+    public virtual Product IdproductNavigation { get; set; } = null!;
 
     public virtual ICollection<Orderdetail> Orderdetails { get; set; } = new List<Orderdetail>();
 

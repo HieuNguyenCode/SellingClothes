@@ -20,7 +20,7 @@ public class Shoppingcart
     /// <summary>
     ///     Tổng giá trị hiện tại của giỏ hàng
     /// </summary>
-    public decimal TotalPrice { get; set; }
+    public int TotalPrice { get; set; }
 
     /// <summary>
     ///     Người cập nhật cuối cùng

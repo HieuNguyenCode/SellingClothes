@@ -28,6 +28,11 @@ public class Shoppingcartitem
     public Guid? Idcolor { get; set; }
 
     /// <summary>
+    ///     Mã kích cỡ sản phẩm được chọn (nếu có)
+    /// </summary>
+    public Guid? Idsize { get; set; }
+
+    /// <summary>
     ///     Số lượng sản phẩm/combo muốn mua
     /// </summary>
     public int Quantity { get; set; }
@@ -35,7 +40,7 @@ public class Shoppingcartitem
     /// <summary>
     ///     Đơn giá lưu cứng tại thời điểm khách thêm vào giỏ
     /// </summary>
-    public decimal UnitPrice { get; set; }
+    public int UnitPrice { get; set; }
 
     /// <summary>
     ///     Người cập nhật số lượng/món hàng
@@ -66,6 +71,8 @@ public class Shoppingcartitem
     public virtual Product? IdproductNavigation { get; set; }
 
     public virtual Shoppingcart IdshoppingCartNavigation { get; set; } = null!;
+
+    public virtual Size? IdsizeNavigation { get; set; }
 
     public virtual User? UpdateByNavigation { get; set; }
 }
