@@ -1,16 +1,17 @@
-﻿namespace Core.Entities;
-
-public class Type
+namespace Core.Entities
 {
-    /// <summary>
-    ///     Mã định danh loại sản phẩm (danh mục)
-    /// </summary>
-    public Guid Idtype { get; set; }
+    public partial class Type
+    {
+        /// <summary>
+        /// Mã định danh loại sản phẩm (danh mục)
+        /// </summary>
+        public Guid Idtype { get; set; }
 
-    /// <summary>
-    ///     Tên loại sản phẩm (VD: Áo khoác, Quần Jean)
-    /// </summary>
-    public string Name { get; set; } = null!;
+        /// <summary>
+        /// Tên loại sản phẩm (VD: Áo khoác, Quần Jean)
+        /// </summary>
+        public string Name { get; set; } = null!;
 
-    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+        public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+    }
 }

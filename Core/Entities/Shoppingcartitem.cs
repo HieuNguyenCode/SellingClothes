@@ -1,6 +1,6 @@
-﻿namespace Core.Entities;
+namespace Core.Entities;
 
-public class Shoppingcartitem
+public class ShoppingCartItem
 {
     /// <summary>
     ///     Mã chi tiết từng món trong giỏ hàng
@@ -70,9 +70,9 @@ public class Shoppingcartitem
 
     public virtual Product? IdproductNavigation { get; set; }
 
-    public virtual Shoppingcart IdshoppingCartNavigation { get; set; } = null!;
+    public virtual ShoppingCart IdshoppingCartNavigation { get; set; } = null!;
 
-    public virtual Size? IdsizeNavigation { get; set; }
+    // public virtual Size? IdsizeNavigation { get; set; }
 
     public virtual User? UpdateByNavigation { get; set; }
 }

@@ -1,6 +1,6 @@
-﻿namespace Core.Entities;
+namespace Core.Entities;
 
-public class Shoppingcart
+public class ShoppingCart
 {
     /// <summary>
     ///     Mã định danh giỏ hàng
@@ -46,7 +46,7 @@ public class Shoppingcart
 
     public virtual User? IduserNavigation { get; set; }
 
-    public virtual ICollection<Shoppingcartitem> Shoppingcartitems { get; set; } = new List<Shoppingcartitem>();
+    public virtual ICollection<ShoppingCartItem> Shoppingcartitems { get; set; } = new List<ShoppingCartItem>();
 
     public virtual User? UpdateByNavigation { get; set; }
 }

@@ -1,6 +1,6 @@
-﻿namespace Core.Entities;
+namespace Core.Entities;
 
-public class Comboproduct
+public class ComboProduct
 {
     /// <summary>
     ///     Mã chi tiết liên kết Combo và Product

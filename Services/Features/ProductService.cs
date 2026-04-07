@@ -37,7 +37,7 @@ public class ProductService(AppDbContext appDbContext) : IProductService
                 Name = c.Name,
                 Price = c.Price,
 
-                PriceSale = c.Saleproducts
+                PriceSale = c.SaleProducts
                     .Where(s => s.StartDate <= now && s.EndDate >= now)
                     .Select(s => (int?)s.Price)
                     .Min(),
@@ -66,13 +66,13 @@ public class ProductService(AppDbContext appDbContext) : IProductService
                 Id = p.Idproduct,
                 Name = p.Name,
                 Price = p.Price,
-                PriceSale = p.Saleproducts
+                PriceSale = p.SaleProducts
                     .Where(s => s.StartDate <= now && s.EndDate >= now)
                     .Select(s => (int?)s.Price)
                     .Min(),
                 Images = p.Images.Select(i => i.Url).ToList(),
 
-                Sizes = p.Sizes.Select(s => s.Name).ToList(),
+                // Sizes = p.Sizes.Select(s => s.Name).ToList(),
                 Colors = p.Colors.Select(c => c.Name).ToList(),
 
                 TypeName = p.IdtypeNavigation.Name,

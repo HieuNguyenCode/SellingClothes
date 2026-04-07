@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS SaleProduct (
     IDProduct CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu sản phẩm được giảm giá',
     Price INT NOT NULL COMMENT 'Giá bán sau khi áp dụng giảm giá (giá cố định trong suốt thời gian khuyến mãi)',
     StartDate DATETIME NOT NULL COMMENT 'Thời gian bắt đầu áp dụng giảm giá',
-    EndDate DATETIME NOT NULL COMMENT 'Thời gian kết thúc giảm giá',
+    EndDate DATETIME COMMENT 'Thời gian kết thúc giảm giá',
     
     UpdateBy CHAR(36) COMMENT 'Người cập nhật thông tin',
     CreateBy CHAR(36) NOT NULL COMMENT 'Người thiết lập khuyến mãi',
@@ -116,15 +116,17 @@ CREATE TABLE IF NOT EXISTS SaleProduct (
     CONSTRAINT fk_sp_sale FOREIGN KEY (IDSale) REFERENCES Sale(IDSale),
     CONSTRAINT fk_sp_product FOREIGN KEY (IDProduct) REFERENCES Product(IDProduct),
     CONSTRAINT fk_sp_user_update FOREIGN KEY (UpdateBy) REFERENCES users(IDUser),
-    CONSTRAINT fk_sp_user_create FOREIGN KEY (CreateBy) REFERENCES users(IDUser)
+    CONSTRAINT fk_sp_user_create FOREIGN KEY (CreateBy) REFERENCES users(IDUser),
+    UNIQUE (IDSale, IDProduct)
 );
 
 CREATE TABLE IF NOT EXISTS SaleCombo (
     IDSaleCombo CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã chi tiết áp dụng khuyến mãi cho combo',
     IDSale CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu chương trình khuyến mãi',
     IDCombo CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu combo được giảm giá',
+    Price INT NOT NULL COMMENT 'Giá bán sau khi áp dụng giảm giá (giá cố định trong suốt thời gian khuyến mãi)',
     StartDate DATETIME NOT NULL COMMENT 'Thời gian bắt đầu áp dụng giảm giá',
-    EndDate DATETIME NOT NULL COMMENT 'Thời gian kết thúc giảm giá',
+    EndDate DATETIME COMMENT 'Thời gian kết thúc giảm giá',
     
     UpdateBy CHAR(36) COMMENT 'Người cập nhật thông tin',
     CreateBy CHAR(36) NOT NULL COMMENT 'Người thiết lập khuyến mãi',
@@ -133,7 +135,8 @@ CREATE TABLE IF NOT EXISTS SaleCombo (
     CONSTRAINT fk_sc_sale FOREIGN KEY (IDSale) REFERENCES Sale(IDSale),
     CONSTRAINT fk_sc_combo FOREIGN KEY (IDCombo) REFERENCES Combo(IDCombo),
     CONSTRAINT fk_sc_user_update FOREIGN KEY (UpdateBy) REFERENCES users(IDUser),
-    CONSTRAINT fk_sc_user_create FOREIGN KEY (CreateBy) REFERENCES users(IDUser)
+    CONSTRAINT fk_sc_user_create FOREIGN KEY (CreateBy) REFERENCES users(IDUser),
+    UNIQUE (IDSale, IDCombo)
 );
 
 CREATE TABLE IF NOT EXISTS ShoppingCart (

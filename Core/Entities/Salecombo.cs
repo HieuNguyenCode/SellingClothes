@@ -1,6 +1,6 @@
-﻿namespace Core.Entities;
+namespace Core.Entities;
 
-public class Salecombo
+public class SaleCombo
 {
     /// <summary>
     ///     Mã chi tiết áp dụng khuyến mãi cho combo

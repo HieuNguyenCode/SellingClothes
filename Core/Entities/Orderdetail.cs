@@ -1,6 +1,6 @@
-﻿namespace Core.Entities;
+namespace Core.Entities;
 
-public class Orderdetail
+public class OrderDetail
 {
     /// <summary>
     ///     Mã chi tiết từng dòng trong hóa đơn
@@ -77,7 +77,7 @@ public class Orderdetail
 
     public virtual Product? IdproductNavigation { get; set; }
 
-    public virtual Size? IdsizeNavigation { get; set; }
+    // public virtual Size? IdsizeNavigation { get; set; }
 
     public virtual User? UpdateByNavigation { get; set; }
 }
