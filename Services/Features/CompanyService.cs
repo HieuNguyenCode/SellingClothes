@@ -13,10 +13,7 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
     {
         var query = appDbContext.Companies.AsNoTracking().AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            query = query.Where(c => c.Name.Contains(search));
-        }
+        if (!string.IsNullOrWhiteSpace(search)) query = query.Where(c => c.Name.Contains(search));
 
         query = query.OrderBy(c => c.Name);
 
@@ -28,7 +25,7 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
             .Take(validPageSize)
             .Select(c => new CompanysDto
             {
-                Idcompany = c.Idcompany,
+                Id = c.Idcompany,
                 Name = c.Name
             })
             .ToListAsync();
@@ -45,17 +42,15 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
     {
         var company = await appDbContext.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Idcompany == id);
         if (company == null)
-        {
             return new ServiceResponse<CompanysDto>
             {
                 Status = 404,
                 Message = "Không tìm thấy công ty."
             };
-        }
 
         var companyDto = new CompanysDto
         {
-            Idcompany = company.Idcompany,
+            Id = company.Idcompany,
             Name = company.Name
         };
 
@@ -68,16 +63,15 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
 
     public async Task<ServiceResponse> CreateCompany(CompanyUpdateDto companyCreateDto)
     {
-        var company = await appDbContext.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Name == companyCreateDto.Name)
+        var company = await appDbContext.Companies.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Name == companyCreateDto.Name)
             .ConfigureAwait(false);
         if (company != null)
-        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Tên công ty đã tồn tại."
             };
-        }
 
         var newCompany = new Company
         {
@@ -96,24 +90,20 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
     {
         var company = await appDbContext.Companies.FirstOrDefaultAsync(c => c.Idcompany == id);
         if (company == null)
-        {
             return new ServiceResponse
             {
                 Status = 404,
                 Message = "Không tìm thấy công ty."
             };
-        }
 
         var isNameExist = await appDbContext.Companies.AsNoTracking()
             .AnyAsync(c => c.Name == companyUpdateDto.Name && c.Idcompany != id);
         if (isNameExist)
-        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Tên công ty đã tồn tại."
             };
-        }
 
         company.Name = companyUpdateDto.Name;
         appDbContext.Companies.Update(company);
@@ -131,22 +121,18 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
             .Include(c => c.Products)
             .FirstOrDefaultAsync(c => c.Idcompany == id);
         if (company == null)
-        {
             return new ServiceResponse
             {
                 Status = 404,
                 Message = "Không tìm thấy công ty."
             };
-        }
 
         if (company.Products.Count != 0)
-        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Không thể xóa công ty vì vẫn còn sản phẩm liên quan."
             };
-        }
 
         appDbContext.Companies.Remove(company);
         await appDbContext.SaveChangesAsync().ConfigureAwait(false);

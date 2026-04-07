@@ -5,6 +5,8 @@ using Services.Interfaces;
 
 namespace API.Controllers;
 
+[Route("api/v1/[controller]")]
+[ApiController]
 public class ComboController(IComboService comboService) : BaseController
 {
     [HttpGet]

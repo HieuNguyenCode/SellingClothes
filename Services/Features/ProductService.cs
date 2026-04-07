@@ -1,10 +1,10 @@
 ﻿using Core.Entities;
 using Infrastructure.Data;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Services.Dto.Requests;
 using Services.Dto.Responses;
+using Services.Helpers;
 using Services.Interfaces;
 
 namespace Services.Features;
@@ -116,7 +116,7 @@ public class ProductService(
                 .FirstOrDefaultAsync(c => c.Name == dto.CompanyName);
             if (company == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
 
-            var mainImageUrl = await SaveFileAsync(dto.Image);
+            var mainImageUrl = await SaveFile.SaveFileAsync(dto.Image);
             if (string.IsNullOrEmpty(mainImageUrl))
                 return new ServiceResponse { Status = 400, Message = "Lỗi khi tải ảnh chính lên hệ thống." };
 
@@ -142,7 +142,7 @@ public class ProductService(
                 var productImages = new List<Image>();
                 foreach (var file in dto.Images)
                 {
-                    var imageUrl = await SaveFileAsync(file);
+                    var imageUrl = await SaveFile.SaveFileAsync(file);
                     if (string.IsNullOrEmpty(imageUrl)) continue;
                     uploadedImageUrls.Add(imageUrl);
 
@@ -187,10 +187,7 @@ public class ProductService(
         {
             await transaction.RollbackAsync();
 
-            foreach (var physicalPath in uploadedImageUrls
-                         .Select(url => url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))
-                         .Select(relativePath => Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath))
-                         .Where(physicalPath => File.Exists(physicalPath))) File.Delete(physicalPath);
+            SaveFile.DeleteFileRange(uploadedImageUrls);
             logger.LogError(ex, "Lỗi khi tạo sản phẩm. Đã hoàn tác toàn bộ thay đổi và xóa các file đã tải lên.");
             return new ServiceResponse
             {
@@ -235,7 +232,7 @@ public class ProductService(
             product.Idcompany = company.Idcompany;
             product.Idtype = type.Idtype;
 
-            var newMainImageUrl = await SaveFileAsync(dto.Image);
+            var newMainImageUrl = await SaveFile.SaveFileAsync(dto.Image);
             if (string.IsNullOrEmpty(newMainImageUrl))
                 return new ServiceResponse { Status = 400, Message = "Lỗi khi tải ảnh chính lên hệ thống." };
 
@@ -255,7 +252,7 @@ public class ProductService(
                 var productImages = new List<Image>();
                 foreach (var file in dto.Images)
                 {
-                    var imageUrl = await SaveFileAsync(file);
+                    var imageUrl = await SaveFile.SaveFileAsync(file);
                     if (string.IsNullOrEmpty(imageUrl)) continue;
                     uploadedImageUrls.Add(imageUrl);
 
@@ -292,10 +289,7 @@ public class ProductService(
             await appDbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            foreach (var physicalPath in oldImageUrlsToDeleteOnSuccess
-                         .Select(url => url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))
-                         .Select(relativePath => Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath))
-                         .Where(physicalPath => File.Exists(physicalPath))) File.Delete(physicalPath);
+            SaveFile.DeleteFileRange(oldImageUrlsToDeleteOnSuccess);
 
             return new ServiceResponse
             {
@@ -307,10 +301,7 @@ public class ProductService(
         {
             await transaction.RollbackAsync();
 
-            foreach (var physicalPath in uploadedImageUrls
-                         .Select(url => url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))
-                         .Select(relativePath => Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath))
-                         .Where(physicalPath => File.Exists(physicalPath))) File.Delete(physicalPath);
+            SaveFile.DeleteFileRange(uploadedImageUrls);
 
             logger.LogError(ex, "Lỗi khi cập nhật sản phẩm. Đã hoàn tác toàn bộ thay đổi và xóa các file đã tải lên.");
             return new ServiceResponse
@@ -325,36 +316,28 @@ public class ProductService(
     {
         var product = await appDbContext.Products
             .Include(p => p.Images)
+            .Include(p => p.Colors)
+            .Include(p => p.Sizes)
             .FirstOrDefaultAsync(p => p.Idproduct == id);
+
         if (product == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
+
+        var imageUrlsToDelete = product.Images.Select(i => i.Url).ToList();
+
+        if (product.Images.Count != 0) appDbContext.Images.RemoveRange(product.Images);
+        if (product.Colors.Count != 0) appDbContext.Colors.RemoveRange(product.Colors);
+        if (product.Sizes.Count != 0) appDbContext.Sizes.RemoveRange(product.Sizes);
+
         appDbContext.Products.Remove(product);
         await appDbContext.SaveChangesAsync();
+
+        if (!string.IsNullOrEmpty(product.Image)) SaveFile.DeleteFile(product.Image);
+        SaveFile.DeleteFileRange(imageUrlsToDelete);
+
         return new ServiceResponse
         {
             Status = 200,
             Message = "Xóa sản phẩm thành công."
         };
-    }
-
-    // ====================================================================
-    // HÀM HỖ TRỢ LƯU FILE 
-    // ====================================================================
-    private static async Task<string> SaveFileAsync(IFormFile? file)
-    {
-        if (file == null || file.Length == 0) return string.Empty;
-
-        var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
-
-        if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
-
-        var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-        var filePath = Path.Combine(folderPath, fileName);
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        return $"/images/{fileName}";
     }
 }

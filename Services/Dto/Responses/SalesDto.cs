@@ -1,6 +1,6 @@
-﻿namespace Services.Dto.Responses;
+namespace Services.Dto.Responses;
 
-public class CompanysDto
+public class SalesDto
 {
     public Guid Id { get; set; }
 
