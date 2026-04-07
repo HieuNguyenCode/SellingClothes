@@ -96,8 +96,14 @@ public class ProductService(
         };
     }
 
-    public async Task<ServiceResponse> CreateProductAsync(ProductUpdateDto dto)
+    public async Task<ServiceResponse> CreateProductAsync(ProductUpdateDto dto, string? sub)
     {
+        if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+            return new ServiceResponse
+            {
+                Status = 400,
+                Message = "Thông tin người dùng không hợp lệ"
+            };
         var uploadedImageUrls = new List<string>();
 
         await using var transaction = await appDbContext.Database.BeginTransactionAsync();
@@ -132,7 +138,8 @@ public class ProductService(
                 Describe = dto.Description,
                 Idcompany = company.Idcompany,
                 Idtype = type.Idtype,
-                Image = mainImageUrl
+                Image = mainImageUrl,
+                CreateBy = userId
             };
 
             await appDbContext.Products.AddAsync(product);
@@ -197,8 +204,14 @@ public class ProductService(
         }
     }
 
-    public async Task<ServiceResponse> UpdateProductAsync(Guid id, ProductUpdateDto dto)
+    public async Task<ServiceResponse> UpdateProductAsync(Guid id, ProductUpdateDto dto, string? sub)
     {
+        if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+            return new ServiceResponse
+            {
+                Status = 400,
+                Message = "Thông tin người dùng không hợp lệ"
+            };
         var uploadedImageUrls = new List<string>();
         var oldImageUrlsToDeleteOnSuccess = new List<string>();
 
@@ -231,6 +244,7 @@ public class ProductService(
             product.Describe = dto.Description;
             product.Idcompany = company.Idcompany;
             product.Idtype = type.Idtype;
+            product.UpdateBy = userId;
 
             var newMainImageUrl = await SaveFile.SaveFileAsync(dto.Image);
             if (string.IsNullOrEmpty(newMainImageUrl))

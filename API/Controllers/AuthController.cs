@@ -1,4 +1,5 @@
 ﻿using API.Common;
+using API.Http;
 using Microsoft.AspNetCore.Mvc;
 using Services.Dto.Requests;
 using Services.Interfaces;
@@ -16,8 +17,9 @@ public class AuthController(IAuthService authService) : BaseController
     }
 
     [HttpPatch("RefreshToken")]
-    public async Task<IActionResult> RefreshToken([FromBody] string refreshTokenOld)
+    public async Task<IActionResult> RefreshToken()
     {
+        var refreshTokenOld = Request.GetBearerToken();
         return Result(await authService.RefreshToken(refreshTokenOld));
     }
 

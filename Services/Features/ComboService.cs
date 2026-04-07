@@ -92,8 +92,14 @@ public class ComboService(
         };
     }
 
-    public async Task<ServiceResponse> AddComboAsync(ComboUpdateDto dto)
+    public async Task<ServiceResponse> AddComboAsync(ComboUpdateDto dto, string? sub)
     {
+        if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+            return new ServiceResponse
+            {
+                Status = 400,
+                Message = "Thông tin người dùng không hợp lệ"
+            };
         var isComboExist = await appDbContext.Combos.AnyAsync(c => c.Name == dto.Name);
         if (isComboExist) return new ServiceResponse { Status = 400, Message = "Combo đã tồn tại." };
 
@@ -112,7 +118,8 @@ public class ComboService(
                 Idcombo = newComboId,
                 Name = dto.Name,
                 Price = dto.Price,
-                Image = uploadedImageUrl
+                Image = uploadedImageUrl,
+                CreateBy = userId
             };
 
             await appDbContext.Combos.AddAsync(newCombo);
@@ -141,7 +148,8 @@ public class ComboService(
                     {
                         Idcombo = newComboId,
                         Idproduct = product.Idproduct,
-                        Quantity = item.Quantity
+                        Quantity = item.Quantity,
+                        CreateBy = userId
                     });
                 }
 
@@ -164,8 +172,14 @@ public class ComboService(
         }
     }
 
-    public async Task<ServiceResponse> UpdateComboAsync(Guid id, ComboUpdateDto dto)
+    public async Task<ServiceResponse> UpdateComboAsync(Guid id, ComboUpdateDto dto, string? sub)
     {
+        if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+            return new ServiceResponse
+            {
+                Status = 400,
+                Message = "Thông tin người dùng không hợp lệ"
+            };
         var uploadedImageUrl = string.Empty;
         var oldImageUrlToDeleteOnSuccess = string.Empty;
 
@@ -183,6 +197,7 @@ public class ComboService(
 
             combo.Name = dto.Name;
             combo.Price = dto.Price;
+            combo.UpdateBy = userId;
 
             if (dto.Image.Length > 0)
             {
@@ -215,7 +230,8 @@ public class ComboService(
                     {
                         Idcombo = id,
                         Idproduct = productEntity.Idproduct,
-                        Quantity = item.Quantity
+                        Quantity = item.Quantity,
+                        CreateBy = userId
                     });
                 }
 

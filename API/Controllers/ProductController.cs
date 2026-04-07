@@ -1,4 +1,5 @@
-﻿using API.Common;
+﻿using System.Security.Claims;
+using API.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.Dto.Requests;
@@ -27,14 +28,16 @@ public class ProductController(IProductService productService) : BaseController
     [HttpPost]
     public async Task<IActionResult> CreateProduct([FromBody] ProductUpdateDto productCreateDto)
     {
-        return Result(await productService.CreateProductAsync(productCreateDto));
+        return Result(await productService.CreateProductAsync(productCreateDto,
+            User.FindFirstValue(ClaimTypes.NameIdentifier)));
     }
 
     [Authorize(Roles = "admin")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> UpdateProduct(Guid id, [FromBody] ProductUpdateDto productUpdateDto)
     {
-        return Result(await productService.UpdateProductAsync(id, productUpdateDto));
+        return Result(await productService.UpdateProductAsync(id, productUpdateDto,
+            User.FindFirstValue(ClaimTypes.NameIdentifier)));
     }
 
     [Authorize(Roles = "admin")]
