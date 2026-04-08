@@ -14,11 +14,13 @@ public class ProductService(
     ILogger<ProductService> logger
 ) : IProductService
 {
-    public async Task<ServiceResponse<List<ProductsDto>>> GetProductsAsync(string? search, int? page, int? pageSize)
+    public async Task<ServiceResponse<List<ProductsDto>>> GetProductsAsync(string? sub, string? search, int? page,
+        int? pageSize)
     {
         var now = DateTime.Now;
 
-        var query = appDbContext.Products.AsNoTracking().AsQueryable();
+        var query = appDbContext.Products.AsNoTracking().AsQueryable()
+            .Where(p => !p.IsDeleted && (sub == "admin" || p.IsPublished));
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(c => c.Name.Contains(search) ||
@@ -29,6 +31,8 @@ public class ProductService(
 
         var validPage = (page ?? 1) > 0 ? page ?? 1 : 1;
         var validPageSize = (pageSize ?? 10) > 0 ? pageSize ?? 10 : 10;
+
+        var totalCount = await query.CountAsync();
 
         var products = await query
             .Skip((validPage - 1) * validPageSize)
@@ -42,7 +46,8 @@ public class ProductService(
                     .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
                     .Select(s => (int?)s.Price)
                     .Min(),
-                Image = c.Image
+                Image = c.Image,
+                IsPublished = c.IsPublished
             })
             .ToListAsync();
 
@@ -50,7 +55,11 @@ public class ProductService(
         {
             Status = 200,
             Message = "Lấy danh sách sản phẩm thành công.",
-            Data = products
+            Data = products,
+            PageSize = validPageSize,
+            PageNumber = validPage,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / validPageSize)
         };
     }
 
@@ -335,35 +344,54 @@ public class ProductService(
         }
     }
 
-    public async Task<ServiceResponse> DeleteProductAsync(Guid id)
+    public async Task<ServiceResponse> DeleteProductAsync(Guid id, string? sub)
     {
+        if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+            return new ServiceResponse
+            {
+                Status = 400,
+                Message = "Thông tin người dùng không hợp lệ"
+            };
         var product = await appDbContext.Products
-            .Include(p => p.Images)
-            .Include(p => p.Colors)
-            .Include(p => p.Sizes)
             .FirstOrDefaultAsync(p => p.Idproduct == id);
 
         if (product == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
 
-        var imageUrlsToDelete = product.Images.Select(i => i.Url).ToList();
-
-        if (product.Images.Count != 0) appDbContext.Images.RemoveRange(product.Images);
-
-        if (product.Colors.Count != 0) appDbContext.Colors.RemoveRange(product.Colors);
-
-        if (product.Sizes.Count != 0) appDbContext.Sizes.RemoveRange(product.Sizes);
-
-        appDbContext.Products.Remove(product);
+        product.IsDeleted = !product.IsDeleted;
+        product.UpdateBy = userId;
+        appDbContext.Products.Update(product);
         await appDbContext.SaveChangesAsync();
-
-        if (!string.IsNullOrEmpty(product.Image)) SaveFile.DeleteFile(product.Image);
-
-        SaveFile.DeleteFileRange(imageUrlsToDelete);
 
         return new ServiceResponse
         {
             Status = 200,
             Message = "Xóa sản phẩm thành công."
+        };
+    }
+
+    public async Task<ServiceResponse> PublishProductAsync(Guid id, string? sub)
+    {
+        if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+            return new ServiceResponse
+            {
+                Status = 400,
+                Message = "Thông tin người dùng không hợp lệ"
+            };
+        var product = await appDbContext.Products
+            .FirstOrDefaultAsync(p => p.Idproduct == id);
+
+        if (product == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
+
+        product.IsPublished = !product.IsPublished;
+        product.UpdateBy = userId;
+
+        appDbContext.Products.Update(product);
+        await appDbContext.SaveChangesAsync();
+
+        return new ServiceResponse
+        {
+            Status = 200,
+            Message = product.IsPublished ? "Xuất bản sản phẩm thành công." : "Hủy xuất bản sản phẩm thành công."
         };
     }
 }

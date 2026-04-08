@@ -15,7 +15,8 @@ public class ProductController(IProductService productService) : BaseController
     public async Task<IActionResult> GetProducts([FromQuery] string? search, [FromQuery] int? page,
         [FromQuery] int? pageSize)
     {
-        return Result(await productService.GetProductsAsync(search, page, pageSize));
+        return Result(await productService.GetProductsAsync(User.FindFirstValue(ClaimTypes.NameIdentifier), search,
+            page, pageSize));
     }
 
     [HttpGet("{id:guid}")]
@@ -44,6 +45,13 @@ public class ProductController(IProductService productService) : BaseController
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteProduct(Guid id)
     {
-        return Result(await productService.DeleteProductAsync(id));
+        return Result(await productService.DeleteProductAsync(id, User.FindFirstValue(ClaimTypes.NameIdentifier)));
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpPatch("{id:guid}/publish")]
+    public async Task<IActionResult> PublishProduct(Guid id)
+    {
+        return Result(await productService.PublishProductAsync(id, User.FindFirstValue(ClaimTypes.NameIdentifier)));
     }
 }

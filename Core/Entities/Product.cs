@@ -40,7 +40,7 @@ public class Product
     /// <summary>
     ///     Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng
     /// </summary>
-    public bool? IsPublished { get; set; }
+    public bool IsPublished { get; set; }
 
     /// <summary>
     ///     Cờ đánh dấu sản phẩm đã bị xóa (soft delete)

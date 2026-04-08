@@ -20,6 +20,8 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
         var validPage = (page ?? 1) > 0 ? page ?? 1 : 1;
         var validPageSize = (pageSize ?? 10) > 0 ? pageSize ?? 10 : 10;
 
+        var totalCount = await query.CountAsync();
+
         var companies = await query
             .Skip((validPage - 1) * validPageSize)
             .Take(validPageSize)
@@ -34,7 +36,11 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
         {
             Status = 200,
             Message = "Lấy danh sách thương hiệu/công ty thành công.",
-            Data = companies
+            Data = companies,
+            PageSize = validPageSize,
+            PageNumber = validPage,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / validPageSize)
         };
     }
 

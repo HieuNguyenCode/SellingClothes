@@ -13,15 +13,14 @@ public class TypeService(AppDbContext appDbContext) : ITypeService
     {
         var query = appDbContext.Types.AsNoTracking().AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            query = query.Where(c => c.Name.Contains(search));
-        }
+        if (!string.IsNullOrWhiteSpace(search)) query = query.Where(c => c.Name.Contains(search));
 
         query = query.OrderBy(c => c.Name);
 
         var validPage = (page ?? 1) > 0 ? page ?? 1 : 1;
         var validPageSize = (pageSize ?? 10) > 0 ? pageSize ?? 10 : 10;
+
+        var totalCount = await query.CountAsync();
 
         var types = await query
             .Skip((validPage - 1) * validPageSize)
@@ -37,7 +36,11 @@ public class TypeService(AppDbContext appDbContext) : ITypeService
         {
             Status = 200,
             Message = "Lấy danh sách thương hiệu/công ty thành công.",
-            Data = types
+            Data = types,
+            PageSize = validPageSize,
+            PageNumber = validPage,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / validPageSize)
         };
     }
 
@@ -45,13 +48,11 @@ public class TypeService(AppDbContext appDbContext) : ITypeService
     {
         var type = await appDbContext.Types.AsNoTracking().FirstOrDefaultAsync(t => t.Idtype == id);
         if (type == null)
-        {
             return new ServiceResponse<TypeDto>
             {
                 Status = 404,
                 Message = "Không tìm thấy loại thiết bị."
             };
-        }
 
         var typeDto = new TypeDto
         {
@@ -70,13 +71,11 @@ public class TypeService(AppDbContext appDbContext) : ITypeService
     {
         var type = await appDbContext.Types.AsNoTracking().FirstOrDefaultAsync(t => t.Name == typeDto.Name);
         if (type != null)
-        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Loại thiết bị đã tồn tại."
             };
-        }
 
         var newType = new Type
         {
@@ -95,24 +94,20 @@ public class TypeService(AppDbContext appDbContext) : ITypeService
     {
         var updatedType = await appDbContext.Types.FirstOrDefaultAsync(t => t.Idtype == id);
         if (updatedType == null)
-        {
             return new ServiceResponse
             {
                 Status = 404,
                 Message = "Không tìm thấy loại thiết bị."
             };
-        }
 
         var isNameExist = await appDbContext.Types
             .AnyAsync(t => t.Idtype != id && t.Name == typeDto.Name);
         if (isNameExist)
-        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Tên loại thiết bị đã tồn tại."
             };
-        }
 
         updatedType.Name = typeDto.Name;
         appDbContext.Update(updatedType);
@@ -130,22 +125,18 @@ public class TypeService(AppDbContext appDbContext) : ITypeService
             .Include(t => t.Products)
             .FirstOrDefaultAsync(t => t.Idtype == id);
         if (type == null)
-        {
             return new ServiceResponse
             {
                 Status = 404,
                 Message = "Không tìm thấy loại thiết bị."
             };
-        }
 
         if (type.Products.Count != 0)
-        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Không thể xóa loại thiết bị vì có sản phẩm liên quan."
             };
-        }
 
         appDbContext.Types.Remove(type);
         await appDbContext.SaveChangesAsync();

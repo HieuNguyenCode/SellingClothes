@@ -19,12 +19,14 @@ public class ComboService(
 
         var query = appDbContext.Combos.AsNoTracking().AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(search)) query = query.Where(c => c.Name.Contains(search));
+        if (!string.IsNullOrWhiteSpace(search)) query = query.Where(c => c.Name.Contains(search.Trim()));
 
         query = query.OrderBy(c => c.Name);
 
-        var validPage = (page ?? 1) > 0 ? page ?? 1 : 1;
-        var validPageSize = (pageSize ?? 10) > 0 ? pageSize ?? 10 : 10;
+        var validPage = Math.Max(1, page ?? 1);
+        var validPageSize = Math.Max(1, pageSize ?? 10);
+
+        var totalCount = await query.CountAsync();
 
         var listCombos = await query
             .Skip((validPage - 1) * validPageSize)
@@ -36,17 +38,19 @@ public class ComboService(
                 Price = c.Price,
                 PriceSale = c.SaleCombos
                     .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
-                    .Select(s => (int?)s.Price)
-                    .Min()
-                // Image = c.Image
+                    .Min(s => (int?)s.Price)
             })
             .ToListAsync();
 
         return new ServiceResponse<List<CombosDto>>
         {
             Status = 200,
-            Message = "Lấy danh sách sản phẩm thành công.",
-            Data = listCombos
+            Message = "Lấy danh sách combo thành công.",
+            Data = listCombos,
+            PageSize = validPageSize,
+            PageNumber = validPage,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling((double)totalCount / validPageSize)
         };
     }
 
