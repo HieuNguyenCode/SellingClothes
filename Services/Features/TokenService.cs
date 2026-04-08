@@ -11,7 +11,7 @@ namespace Services.Features;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
-    public string GenerateAccessToken(Users user)
+    public string GenerateAccessToken(User user)
     {
         var claims = new List<Claim>
         {
@@ -25,7 +25,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
         return CreateToken(claims, expires);
     }
 
-    public string GenerateRefreshToken(Users user)
+    public string GenerateRefreshToken(User user)
     {
         var claims = new List<Claim>
         {
@@ -44,10 +44,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
 
         token = token.Replace("Bearer ", "").Trim();
 
-        if (string.IsNullOrEmpty(token) || !tokenHandler.CanReadToken(token))
-        {
-            return string.Empty;
-        }
+        if (string.IsNullOrEmpty(token) || !tokenHandler.CanReadToken(token)) return string.Empty;
 
         try
         {
@@ -65,10 +62,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
         var tokenHandler = new JwtSecurityTokenHandler();
         token = token.Replace("Bearer ", "").Trim();
 
-        if (tokenHandler.ReadToken(token) is not JwtSecurityToken jwtToken)
-        {
-            return string.Empty;
-        }
+        if (tokenHandler.ReadToken(token) is not JwtSecurityToken jwtToken) return string.Empty;
 
         var subClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
         return subClaim?.Value ?? string.Empty;

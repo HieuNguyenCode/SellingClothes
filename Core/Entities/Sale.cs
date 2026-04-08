@@ -1,21 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace Core.Entities;
 
-namespace APINhatKyDienTu.Core.Entities;
-
-public partial class Sale
+public class Sale
 {
     /// <summary>
-    /// Mã chương trình khuyến mãi/giảm giá
+    ///     Mã chương trình khuyến mãi/giảm giá
     /// </summary>
     public Guid Idsale { get; set; }
 
     /// <summary>
-    /// Tên chương trình khuyến mãi
+    ///     Tên chương trình khuyến mãi
     /// </summary>
     public string Name { get; set; } = null!;
 
-    public virtual ICollection<Salecombo> Salecombo { get; set; } = new List<Salecombo>();
+    public virtual ICollection<SaleCombo> SaleCombos { get; set; } = new List<SaleCombo>();
 
-    public virtual ICollection<Saleproduct> Saleproduct { get; set; } = new List<Saleproduct>();
+    public virtual ICollection<SaleProduct> SaleProducts { get; set; } = new List<SaleProduct>();
 }

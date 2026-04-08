@@ -4,8 +4,8 @@ namespace Services.Interfaces;
 
 public interface ITokenService
 {
-    string GenerateAccessToken(Users user);
-    string GenerateRefreshToken(Users user);
+    string GenerateAccessToken(User user);
+    string GenerateRefreshToken(User user);
     string GetJtiFromToken(string token);
     string GetSubFromToken(string token);
 }

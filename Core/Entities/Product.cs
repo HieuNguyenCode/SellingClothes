@@ -1,94 +1,91 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace Core.Entities;
 
-namespace APINhatKyDienTu.Core.Entities;
-
-public partial class Product
+public class Product
 {
     /// <summary>
-    /// Mã định danh sản phẩm
+    ///     Mã định danh sản phẩm
     /// </summary>
     public Guid Idproduct { get; set; }
 
     /// <summary>
-    /// Tên sản phẩm
+    ///     Tên sản phẩm
     /// </summary>
     public string Name { get; set; } = null!;
 
     /// <summary>
-    /// Giá niêm yết của sản phẩm
+    ///     Giá niêm yết của sản phẩm
     /// </summary>
     public int Price { get; set; }
 
     /// <summary>
-    /// Khóa ngoại tham chiếu đến công ty/thương hiệu
+    ///     Khóa ngoại tham chiếu đến công ty/thương hiệu
     /// </summary>
     public Guid Idcompany { get; set; }
 
     /// <summary>
-    /// Khóa ngoại tham chiếu đến loại sản phẩm
+    ///     Khóa ngoại tham chiếu đến loại sản phẩm
     /// </summary>
     public Guid Idtype { get; set; }
 
     /// <summary>
-    /// Mô tả chi tiết về sản phẩm
+    ///     Mô tả chi tiết về sản phẩm
     /// </summary>
     public string? Describe { get; set; }
 
     /// <summary>
-    /// Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm
+    ///     Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm
     /// </summary>
     public string Image { get; set; } = null!;
 
     /// <summary>
-    /// Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng
+    ///     Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng
     /// </summary>
     public bool? IsPublished { get; set; }
 
     /// <summary>
-    /// Cờ đánh dấu sản phẩm đã bị xóa (soft delete)
+    ///     Cờ đánh dấu sản phẩm đã bị xóa (soft delete)
     /// </summary>
     public bool IsDeleted { get; set; }
 
     /// <summary>
-    /// Người cập nhật cuối cùng
+    ///     Người cập nhật cuối cùng
     /// </summary>
     public Guid? UpdateBy { get; set; }
 
     /// <summary>
-    /// Người tạo bản ghi
+    ///     Người tạo bản ghi
     /// </summary>
     public Guid CreateBy { get; set; }
 
     /// <summary>
-    /// Thời gian cập nhật cuối
+    ///     Thời gian cập nhật cuối
     /// </summary>
     public DateTime? UpdateAt { get; set; }
 
     /// <summary>
-    /// Thời gian tạo bản ghi
+    ///     Thời gian tạo bản ghi
     /// </summary>
     public DateTime? CreateAt { get; set; }
 
-    public virtual ICollection<Color> Color { get; set; } = new List<Color>();
+    public virtual ICollection<Color> Colors { get; set; } = new List<Color>();
 
-    public virtual ICollection<Comboproduct> Comboproduct { get; set; } = new List<Comboproduct>();
+    public virtual ICollection<ComboProduct> ComboProducts { get; set; } = new List<ComboProduct>();
 
-    public virtual Users CreateByNavigation { get; set; } = null!;
+    public virtual User CreateByNavigation { get; set; } = null!;
 
     public virtual Company IdcompanyNavigation { get; set; } = null!;
 
     public virtual Type IdtypeNavigation { get; set; } = null!;
 
-    public virtual ICollection<Image> ImageNavigation { get; set; } = new List<Image>();
+    public virtual ICollection<Image> Images { get; set; } = new List<Image>();
 
-    public virtual ICollection<Orderdetail> Orderdetail { get; set; } = new List<Orderdetail>();
+    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
 
-    public virtual ICollection<Saleproduct> Saleproduct { get; set; } = new List<Saleproduct>();
+    public virtual ICollection<SaleProduct> SaleProducts { get; set; } = new List<SaleProduct>();
 
-    public virtual ICollection<Shoppingcartitem> Shoppingcartitem { get; set; } = new List<Shoppingcartitem>();
+    public virtual ICollection<ShoppingCartItem> ShoppingCartItems { get; set; } = new List<ShoppingCartItem>();
 
-    public virtual ICollection<Size> Size { get; set; } = new List<Size>();
+    public virtual ICollection<Size> Sizes { get; set; } = new List<Size>();
 
-    public virtual Users? UpdateByNavigation { get; set; }
+    public virtual User? UpdateByNavigation { get; set; }
 }

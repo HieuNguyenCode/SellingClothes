@@ -18,14 +18,12 @@ public class ProductService(
     {
         var now = DateTime.Now;
 
-        var query = appDbContext.Product.AsNoTracking().AsQueryable();
+        var query = appDbContext.Products.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
-        {
             query = query.Where(c => c.Name.Contains(search) ||
                                      c.IdtypeNavigation.Name.Contains(search) ||
                                      c.IdcompanyNavigation.Name.Contains(search));
-        }
 
         query = query.OrderBy(c => c.Name);
 
@@ -40,7 +38,7 @@ public class ProductService(
                 Id = c.Idproduct,
                 Name = c.Name,
                 Price = c.Price,
-                PriceSale = c.Saleproduct
+                PriceSale = c.SaleProducts
                     .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
                     .Select(s => (int?)s.Price)
                     .Min(),
@@ -60,7 +58,7 @@ public class ProductService(
     {
         var now = DateTime.Now;
 
-        var product = await appDbContext.Product
+        var product = await appDbContext.Products
             .AsNoTracking()
             .Where(p => p.Idproduct == id)
             .Select(p => new ProductDto
@@ -68,15 +66,15 @@ public class ProductService(
                 Id = p.Idproduct,
                 Name = p.Name,
                 Price = p.Price,
-                PriceSale = p.Saleproduct
+                PriceSale = p.SaleProducts
                     .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
                     .Select(s => (int?)s.Price)
                     .Min(),
                 Image = p.Image,
-                Images = p.ImageNavigation.Select(i => i.Url).ToList(),
+                Images = p.Images.Select(i => i.Url).ToList(),
 
-                Sizes = p.Size.Select(s => s.Name).ToList(),
-                Colors = p.Color.Select(c => c.Name).ToList(),
+                Sizes = p.Sizes.Select(s => s.Name).ToList(),
+                Colors = p.Colors.Select(c => c.Name).ToList(),
 
                 TypeName = p.IdtypeNavigation.Name,
                 CompanyName = p.IdcompanyNavigation.Name,
@@ -84,13 +82,11 @@ public class ProductService(
             })
             .FirstOrDefaultAsync();
         if (product == null)
-        {
             return new ServiceResponse<ProductDto>
             {
                 Status = 404,
                 Message = "Không tìm thấy sản phẩm."
             };
-        }
 
         return new ServiceResponse<ProductDto>
         {
@@ -103,46 +99,33 @@ public class ProductService(
     public async Task<ServiceResponse> CreateProductAsync(ProductUpdateDto dto, string? sub)
     {
         if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
-        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Thông tin người dùng không hợp lệ"
             };
-        }
 
         var uploadedImageUrls = new List<string>();
 
         await using var transaction = await appDbContext.Database.BeginTransactionAsync();
         try
         {
-            var isNameExist = await appDbContext.Product.AnyAsync(p => p.Name == dto.Name);
-            if (isNameExist)
-            {
-                return new ServiceResponse { Status = 400, Message = "Tên sản phẩm đã tồn tại." };
-            }
+            var isNameExist = await appDbContext.Products.AnyAsync(p => p.Name == dto.Name);
+            if (isNameExist) return new ServiceResponse { Status = 400, Message = "Tên sản phẩm đã tồn tại." };
 
-            var type = await appDbContext.Type
+            var type = await appDbContext.Types
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Name == dto.TypeName);
-            if (type == null)
-            {
-                return new ServiceResponse { Status = 404, Message = "Không tìm thấy loại sản phẩm." };
-            }
+            if (type == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy loại sản phẩm." };
 
-            var company = await appDbContext.Company
+            var company = await appDbContext.Companies
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Name == dto.CompanyName);
-            if (company == null)
-            {
-                return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
-            }
+            if (company == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
 
             var mainImageUrl = await SaveFile.SaveFileAsync(dto.Image);
             if (string.IsNullOrEmpty(mainImageUrl))
-            {
                 return new ServiceResponse { Status = 400, Message = "Lỗi khi tải ảnh chính lên hệ thống." };
-            }
 
             uploadedImageUrls.Add(mainImageUrl);
 
@@ -160,7 +143,7 @@ public class ProductService(
                 CreateBy = userId
             };
 
-            await appDbContext.Product.AddAsync(product);
+            await appDbContext.Products.AddAsync(product);
             Console.WriteLine(dto.Images?.Count ?? 0);
 
             if (dto.Images != null && dto.Images.Count != 0)
@@ -169,10 +152,7 @@ public class ProductService(
                 foreach (var file in dto.Images)
                 {
                     var imageUrl = await SaveFile.SaveFileAsync(file);
-                    if (string.IsNullOrEmpty(imageUrl))
-                    {
-                        continue;
-                    }
+                    if (string.IsNullOrEmpty(imageUrl)) continue;
 
                     uploadedImageUrls.Add(imageUrl);
 
@@ -184,10 +164,7 @@ public class ProductService(
                     });
                 }
 
-                if (productImages.Count != 0)
-                {
-                    await appDbContext.Image.AddRangeAsync(productImages);
-                }
+                if (productImages.Count != 0) await appDbContext.Images.AddRangeAsync(productImages);
             }
 
             if (dto.Colors.Count != 0)
@@ -196,10 +173,7 @@ public class ProductService(
                     where !string.IsNullOrEmpty(color)
                     select new Color { Idproduct = newProductId, Name = color }).ToList();
 
-                if (productColors.Count != 0)
-                {
-                    await appDbContext.Color.AddRangeAsync(productColors);
-                }
+                if (productColors.Count != 0) await appDbContext.Colors.AddRangeAsync(productColors);
             }
 
             if (dto.Sizes.Count != 0)
@@ -208,10 +182,7 @@ public class ProductService(
                     where !string.IsNullOrEmpty(size)
                     select new Size { Idproduct = newProductId, Name = size }).ToList();
 
-                if (productSizes.Count != 0)
-                {
-                    await appDbContext.Size.AddRangeAsync(productSizes);
-                }
+                if (productSizes.Count != 0) await appDbContext.Sizes.AddRangeAsync(productSizes);
             }
 
             await appDbContext.SaveChangesAsync();
@@ -240,52 +211,38 @@ public class ProductService(
     public async Task<ServiceResponse> UpdateProductAsync(Guid id, ProductUpdateDto dto, string? sub)
     {
         if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
-        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Thông tin người dùng không hợp lệ"
             };
-        }
 
         var uploadedImageUrls = new List<string>();
         var oldImageUrlsToDeleteOnSuccess = new List<string>();
 
-        var product = await appDbContext.Product
-            .Include(p => p.ImageNavigation)
-            .Include(p => p.Color)
-            .Include(p => p.Size)
+        var product = await appDbContext.Products
+            .Include(p => p.Images)
+            .Include(p => p.Colors)
+            .Include(p => p.Sizes)
             .FirstOrDefaultAsync(p => p.Idproduct == id);
 
-        if (product == null)
-        {
-            return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
-        }
+        if (product == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
 
         await using var transaction = await appDbContext.Database.BeginTransactionAsync();
         try
         {
-            var isNameExist = await appDbContext.Product.AnyAsync(p => p.Name == dto.Name && p.Idproduct != id);
-            if (isNameExist)
-            {
-                return new ServiceResponse { Status = 400, Message = "Tên sản phẩm đã tồn tại." };
-            }
+            var isNameExist = await appDbContext.Products.AnyAsync(p => p.Name == dto.Name && p.Idproduct != id);
+            if (isNameExist) return new ServiceResponse { Status = 400, Message = "Tên sản phẩm đã tồn tại." };
 
-            var type = await appDbContext.Type
+            var type = await appDbContext.Types
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Name == dto.TypeName);
-            if (type == null)
-            {
-                return new ServiceResponse { Status = 404, Message = "Không tìm thấy loại sản phẩm." };
-            }
+            if (type == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy loại sản phẩm." };
 
-            var company = await appDbContext.Company
+            var company = await appDbContext.Companies
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Name == dto.CompanyName);
-            if (company == null)
-            {
-                return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
-            }
+            if (company == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
 
             product.Name = dto.Name;
             product.Price = dto.Price;
@@ -296,20 +253,18 @@ public class ProductService(
 
             var newMainImageUrl = await SaveFile.SaveFileAsync(dto.Image);
             if (string.IsNullOrEmpty(newMainImageUrl))
-            {
                 return new ServiceResponse { Status = 400, Message = "Lỗi khi tải ảnh chính lên hệ thống." };
-            }
 
             uploadedImageUrls.Add(newMainImageUrl);
             oldImageUrlsToDeleteOnSuccess.Add(product.Image);
             product.Image = newMainImageUrl;
 
 
-            if (dto.Images != null && dto.Images.Any())
+            if (dto.Images != null && dto.Images.Count != 0)
             {
-                if (product.ImageNavigation.Any())
+                if (product.Images.Count != 0)
                 {
-                    oldImageUrlsToDeleteOnSuccess.AddRange(product.ImageNavigation.Select(i => i.Url));
+                    oldImageUrlsToDeleteOnSuccess.AddRange(product.Images.Select(i => i.Url));
                     appDbContext.Images.RemoveRange(product.Images);
                 }
 
@@ -317,10 +272,7 @@ public class ProductService(
                 foreach (var file in dto.Images)
                 {
                     var imageUrl = await SaveFile.SaveFileAsync(file);
-                    if (string.IsNullOrEmpty(imageUrl))
-                    {
-                        continue;
-                    }
+                    if (string.IsNullOrEmpty(imageUrl)) continue;
 
                     uploadedImageUrls.Add(imageUrl);
 
@@ -332,16 +284,10 @@ public class ProductService(
                     });
                 }
 
-                if (productImages.Count != 0)
-                {
-                    await appDbContext.Images.AddRangeAsync(productImages);
-                }
+                if (productImages.Count != 0) await appDbContext.Images.AddRangeAsync(productImages);
             }
 
-            if (product.Colors.Any())
-            {
-                appDbContext.Colors.RemoveRange(product.Colors);
-            }
+            if (product.Colors.Count != 0) appDbContext.Colors.RemoveRange(product.Colors);
 
             if (dto.Colors.Count != 0)
             {
@@ -349,16 +295,10 @@ public class ProductService(
                     where !string.IsNullOrEmpty(color)
                     select new Color { Idproduct = id, Name = color }).ToList();
 
-                if (productColors.Count != 0)
-                {
-                    await appDbContext.Colors.AddRangeAsync(productColors);
-                }
+                if (productColors.Count != 0) await appDbContext.Colors.AddRangeAsync(productColors);
             }
 
-            if (product.Sizes.Count != 0)
-            {
-                appDbContext.Sizes.RemoveRange(product.Sizes);
-            }
+            if (product.Sizes.Count != 0) appDbContext.Sizes.RemoveRange(product.Sizes);
 
             if (dto.Sizes.Count != 0)
             {
@@ -366,10 +306,7 @@ public class ProductService(
                     where !string.IsNullOrEmpty(size)
                     select new Size { Idproduct = id, Name = size }).ToList();
 
-                if (productSizes.Count != 0)
-                {
-                    await appDbContext.Sizes.AddRangeAsync(productSizes);
-                }
+                if (productSizes.Count != 0) await appDbContext.Sizes.AddRangeAsync(productSizes);
             }
 
             await appDbContext.SaveChangesAsync();
@@ -406,35 +343,20 @@ public class ProductService(
             .Include(p => p.Sizes)
             .FirstOrDefaultAsync(p => p.Idproduct == id);
 
-        if (product == null)
-        {
-            return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
-        }
+        if (product == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
 
         var imageUrlsToDelete = product.Images.Select(i => i.Url).ToList();
 
-        if (product.Images.Count != 0)
-        {
-            appDbContext.Images.RemoveRange(product.Images);
-        }
+        if (product.Images.Count != 0) appDbContext.Images.RemoveRange(product.Images);
 
-        if (product.Colors.Count != 0)
-        {
-            appDbContext.Colors.RemoveRange(product.Colors);
-        }
+        if (product.Colors.Count != 0) appDbContext.Colors.RemoveRange(product.Colors);
 
-        if (product.Sizes.Count != 0)
-        {
-            appDbContext.Sizes.RemoveRange(product.Sizes);
-        }
+        if (product.Sizes.Count != 0) appDbContext.Sizes.RemoveRange(product.Sizes);
 
         appDbContext.Products.Remove(product);
         await appDbContext.SaveChangesAsync();
 
-        if (!string.IsNullOrEmpty(product.Image))
-        {
-            SaveFile.DeleteFile(product.Image);
-        }
+        if (!string.IsNullOrEmpty(product.Image)) SaveFile.DeleteFile(product.Image);
 
         SaveFile.DeleteFileRange(imageUrlsToDelete);
 

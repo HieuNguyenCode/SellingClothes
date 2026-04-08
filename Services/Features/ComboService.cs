@@ -17,12 +17,9 @@ public class ComboService(
     {
         var now = DateTime.Now;
 
-        var query = appDbContext.Combo.AsNoTracking().AsQueryable();
+        var query = appDbContext.Combos.AsNoTracking().AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            query = query.Where(c => c.Name.Contains(search));
-        }
+        if (!string.IsNullOrWhiteSpace(search)) query = query.Where(c => c.Name.Contains(search));
 
         query = query.OrderBy(c => c.Name);
 
@@ -37,7 +34,7 @@ public class ComboService(
                 Id = c.Idcombo,
                 Name = c.Name,
                 Price = c.Price,
-                PriceSale = c.Salecombo
+                PriceSale = c.SaleCombos
                     .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
                     .Select(s => (int?)s.Price)
                     .Min()
@@ -57,7 +54,7 @@ public class ComboService(
     {
         var now = DateTime.Now;
 
-        var combo = await appDbContext.Combo
+        var combo = await appDbContext.Combos
             .AsNoTracking()
             .Where(c => c.Idcombo == id)
             .Select(c => new ComboDto
@@ -65,12 +62,12 @@ public class ComboService(
                 Id = c.Idcombo,
                 Name = c.Name,
                 Price = c.Price,
-                PriceSale = c.Salecombo
+                PriceSale = c.SaleCombos
                     .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
                     .Select(s => (int?)s.Price)
                     .Min(),
                 Image = c.Image,
-                Products = c.Comboproduct.Select(cp => new ComboProductDto
+                Products = c.ComboProducts.Select(cp => new ComboProductDto
                 {
                     Id = cp.IdproductNavigation.Idproduct,
                     Name = cp.IdproductNavigation.Name,
@@ -80,13 +77,11 @@ public class ComboService(
             .FirstOrDefaultAsync();
 
         if (combo == null)
-        {
             return new ServiceResponse<ComboDto>
             {
                 Status = 404,
                 Message = "Không tìm thấy combo."
             };
-        }
 
         return new ServiceResponse<ComboDto>
         {
@@ -99,19 +94,14 @@ public class ComboService(
     public async Task<ServiceResponse> AddComboAsync(ComboUpdateDto dto, string? sub)
     {
         if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
-        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Thông tin người dùng không hợp lệ"
             };
-        }
 
-        var isComboExist = await appDbContext.Combo.AnyAsync(c => c.Name == dto.Name);
-        if (isComboExist)
-        {
-            return new ServiceResponse { Status = 400, Message = "Combo đã tồn tại." };
-        }
+        var isComboExist = await appDbContext.Combos.AnyAsync(c => c.Name == dto.Name);
+        if (isComboExist) return new ServiceResponse { Status = 400, Message = "Combo đã tồn tại." };
 
         string? uploadedImageUrl = null;
         await using var transaction = await appDbContext.Database.BeginTransactionAsync();
@@ -119,9 +109,7 @@ public class ComboService(
         {
             uploadedImageUrl = await SaveFile.SaveFileAsync(dto.Image, "combos");
             if (string.IsNullOrEmpty(uploadedImageUrl))
-            {
                 return new ServiceResponse { Status = 400, Message = "Lỗi khi tải ảnh combo lên hệ thống." };
-            }
 
             var newComboId = Guid.NewGuid();
 
@@ -134,15 +122,15 @@ public class ComboService(
                 CreateBy = userId
             };
 
-            await appDbContext.Combo.AddAsync(newCombo);
+            await appDbContext.Combos.AddAsync(newCombo);
 
             if (dto.ListProducts.Count != 0)
             {
-                var comboProducts = new List<Comboproduct>();
+                var comboProducts = new List<ComboProduct>();
 
                 foreach (var item in dto.ListProducts)
                 {
-                    var product = await appDbContext.Product
+                    var product = await appDbContext.Products
                         .AsNoTracking()
                         .FirstOrDefaultAsync(p => p.Name == item.Name);
 
@@ -156,7 +144,7 @@ public class ComboService(
                         };
                     }
 
-                    comboProducts.Add(new Comboproduct
+                    comboProducts.Add(new ComboProduct
                     {
                         Idcombo = newComboId,
                         Idproduct = product.Idproduct,
@@ -165,7 +153,7 @@ public class ComboService(
                     });
                 }
 
-                await appDbContext.Comboproduct.AddRangeAsync(comboProducts);
+                await appDbContext.ComboProducts.AddRangeAsync(comboProducts);
             }
 
             await appDbContext.SaveChangesAsync();
@@ -177,10 +165,7 @@ public class ComboService(
         {
             await transaction.RollbackAsync();
 
-            if (!string.IsNullOrEmpty(uploadedImageUrl))
-            {
-                SaveFile.DeleteFile(uploadedImageUrl);
-            }
+            if (!string.IsNullOrEmpty(uploadedImageUrl)) SaveFile.DeleteFile(uploadedImageUrl);
 
             logger.LogError(ex, "Lỗi khi thêm Combo.");
             return new ServiceResponse { Status = 500, Message = "Lỗi hệ thống. Đã hoàn tác thay đổi." };
@@ -190,34 +175,26 @@ public class ComboService(
     public async Task<ServiceResponse> UpdateComboAsync(Guid id, ComboUpdateDto dto, string? sub)
     {
         if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
-        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Thông tin người dùng không hợp lệ"
             };
-        }
 
         var uploadedImageUrl = string.Empty;
         var oldImageUrlToDeleteOnSuccess = string.Empty;
 
-        var combo = await appDbContext.Combo
-            .Include(c => c.Comboproduct)
+        var combo = await appDbContext.Combos
+            .Include(c => c.ComboProducts)
             .FirstOrDefaultAsync(c => c.Idcombo == id);
 
-        if (combo == null)
-        {
-            return new ServiceResponse { Status = 404, Message = "Không tìm thấy Combo." };
-        }
+        if (combo == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy Combo." };
 
         await using var transaction = await appDbContext.Database.BeginTransactionAsync();
         try
         {
-            var isNameExist = await appDbContext.Combo.AnyAsync(c => c.Name == dto.Name && c.Idcombo != id);
-            if (isNameExist)
-            {
-                return new ServiceResponse { Status = 400, Message = "Tên Combo đã tồn tại." };
-            }
+            var isNameExist = await appDbContext.Combos.AnyAsync(c => c.Name == dto.Name && c.Idcombo != id);
+            if (isNameExist) return new ServiceResponse { Status = 400, Message = "Tên Combo đã tồn tại." };
 
             combo.Name = dto.Name;
             combo.Price = dto.Price;
@@ -227,25 +204,20 @@ public class ComboService(
             {
                 uploadedImageUrl = await SaveFile.SaveFileAsync(dto.Image, "combos");
                 if (string.IsNullOrEmpty(uploadedImageUrl))
-                {
                     return new ServiceResponse { Status = 400, Message = "Lỗi khi tải ảnh mới lên." };
-                }
 
                 oldImageUrlToDeleteOnSuccess = combo.Image;
                 combo.Image = uploadedImageUrl;
             }
 
-            if (combo.Comboproduct.Count != 0)
-            {
-                appDbContext.Comboproduct.RemoveRange(combo.Comboproduct);
-            }
+            if (combo.ComboProducts.Count != 0) appDbContext.ComboProducts.RemoveRange(combo.ComboProducts);
 
             if (dto.ListProducts.Count != 0)
             {
-                var newComboProducts = new List<Comboproduct>();
+                var newComboProducts = new List<ComboProduct>();
                 foreach (var item in dto.ListProducts)
                 {
-                    var productEntity = await appDbContext.Product
+                    var productEntity = await appDbContext.Products
                         .AsNoTracking()
                         .FirstOrDefaultAsync(p => p.Name == item.Name);
 
@@ -255,7 +227,7 @@ public class ComboService(
                         return new ServiceResponse { Status = 404, Message = $"Không tìm thấy sản phẩm: {item.Name}" };
                     }
 
-                    newComboProducts.Add(new Comboproduct
+                    newComboProducts.Add(new ComboProduct
                     {
                         Idcombo = id,
                         Idproduct = productEntity.Idproduct,
@@ -264,16 +236,13 @@ public class ComboService(
                     });
                 }
 
-                await appDbContext.Comboproduct.AddRangeAsync(newComboProducts);
+                await appDbContext.ComboProducts.AddRangeAsync(newComboProducts);
             }
 
             await appDbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            if (!string.IsNullOrEmpty(oldImageUrlToDeleteOnSuccess))
-            {
-                SaveFile.DeleteFile(oldImageUrlToDeleteOnSuccess);
-            }
+            if (!string.IsNullOrEmpty(oldImageUrlToDeleteOnSuccess)) SaveFile.DeleteFile(oldImageUrlToDeleteOnSuccess);
 
             return new ServiceResponse { Status = 200, Message = "Cập nhật Combo thành công." };
         }
@@ -289,21 +258,15 @@ public class ComboService(
 
     public async Task<ServiceResponse> DeleteComboAsync(Guid id)
     {
-        var combo = await appDbContext.Combo
-            .Include(c => c.Comboproduct)
+        var combo = await appDbContext.Combos
+            .Include(c => c.ComboProducts)
             .FirstOrDefaultAsync(c => c.Idcombo == id);
 
-        if (combo == null)
-        {
-            return new ServiceResponse { Status = 404, Message = "Không tìm thấy Combo." };
-        }
+        if (combo == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy Combo." };
 
-        if (combo.Comboproduct.Count > 0)
-        {
-            appDbContext.Comboproduct.RemoveRange(combo.Comboproduct);
-        }
+        if (combo.ComboProducts.Count > 0) appDbContext.ComboProducts.RemoveRange(combo.ComboProducts);
 
-        appDbContext.Combo.Remove(combo);
+        appDbContext.Combos.Remove(combo);
         await appDbContext.SaveChangesAsync();
 
         return new ServiceResponse { Status = 200, Message = "Xóa Combo thành công." };
