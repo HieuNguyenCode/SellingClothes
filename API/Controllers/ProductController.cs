@@ -15,7 +15,7 @@ public class ProductController(IProductService productService) : BaseController
     public async Task<IActionResult> GetProducts([FromQuery] string? search, [FromQuery] int? page,
         [FromQuery] int? pageSize)
     {
-        return Result(await productService.GetProductsAsync(User.FindFirstValue(ClaimTypes.NameIdentifier), search,
+        return Result(await productService.GetProductsAsync(User.FindFirstValue(ClaimTypes.Role), search,
             page, pageSize));
     }
 
@@ -49,7 +49,7 @@ public class ProductController(IProductService productService) : BaseController
     }
 
     [Authorize(Roles = "admin")]
-    [HttpPatch("{id:guid}/publish")]
+    [HttpPatch("{id:guid}/")]
     public async Task<IActionResult> PublishProduct(Guid id)
     {
         return Result(await productService.PublishProductAsync(id, User.FindFirstValue(ClaimTypes.NameIdentifier)));

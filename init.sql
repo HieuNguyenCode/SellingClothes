@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS Product
     `Describe` TEXT COMMENT 'Mô tả chi tiết về sản phẩm',
     Image      VARCHAR(255) NOT NULL COMMENT 'Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm',
     
-    IsPublished BOOLEAN      NOT NULL             DEFAULT TRUE COMMENT 'Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng',
+    IsPublished BOOLEAN      NOT NULL             DEFAULT FALSE COMMENT 'Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng',
     IsDeleted   BOOLEAN      NOT NULL             DEFAULT FALSE COMMENT 'Cờ đánh dấu sản phẩm đã bị xóa (soft delete)',
     
     UpdateBy   CHAR(36) COMMENT 'Người cập nhật cuối cùng',
@@ -84,6 +84,9 @@ CREATE TABLE IF NOT EXISTS Combo
     Name     VARCHAR(255) NOT NULL COMMENT 'Tên gọi của combo',
     Price    INT          NOT NULL COMMENT 'Giá bán tổng hợp của combo',
     Image    VARCHAR(255) NOT NULL COMMENT 'Đường dẫn lưu trữ file hình ảnh đại diện combo',
+    
+    IsPublished BOOLEAN      NOT NULL             DEFAULT FALSE COMMENT 'Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng',
+    IsDeleted   BOOLEAN      NOT NULL             DEFAULT FALSE COMMENT 'Cờ đánh dấu sản phẩm đã bị xóa (soft delete)',
 
     UpdateBy CHAR(36) COMMENT 'Người cập nhật cuối cùng',
     CreateBy CHAR(36)     NOT NULL COMMENT 'Người tạo combo',

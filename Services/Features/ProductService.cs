@@ -14,29 +14,60 @@ public class ProductService(
     ILogger<ProductService> logger
 ) : IProductService
 {
-    public async Task<ServiceResponse<List<ProductsDto>>> GetProductsAsync(string? sub, string? search, int? page,
+    public async Task<ServiceResponse<List<ProductsDto>>> GetProductsAsync(string? role, string? search, int? page,
         int? pageSize)
     {
         var now = DateTime.Now;
-
+        Console.WriteLine(role);
         var query = appDbContext.Products.AsNoTracking().AsQueryable()
-            .Where(p => !p.IsDeleted && (sub == "admin" || p.IsPublished));
+            .Where(p => !p.IsDeleted && (role == "admin" || p.IsPublished));
 
         if (!string.IsNullOrWhiteSpace(search))
+        {
             query = query.Where(c => c.Name.Contains(search) ||
                                      c.IdtypeNavigation.Name.Contains(search) ||
                                      c.IdcompanyNavigation.Name.Contains(search));
+        }
 
         query = query.OrderBy(c => c.Name);
+        List<ProductsDto> products;
+        if (page.HasValue && pageSize.HasValue)
+        {
+            var validPage = page.Value > 0 ? page.Value : 1;
+            var validPageSize = pageSize.Value > 0 ? pageSize.Value : 10;
 
-        var validPage = (page ?? 1) > 0 ? page ?? 1 : 1;
-        var validPageSize = (pageSize ?? 10) > 0 ? pageSize ?? 10 : 10;
+            var totalCount = await query.CountAsync();
 
-        var totalCount = await query.CountAsync();
+            products = await query
+                .Skip((validPage - 1) * validPageSize)
+                .Take(validPageSize)
+                .Select(c => new ProductsDto
+                {
+                    Id = c.Idproduct,
+                    Name = c.Name,
+                    Price = c.Price,
+                    PriceSale = c.SaleProducts
+                        .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
+                        .Select(s => (int?)s.Price)
+                        .Min(),
+                    Image = c.Image,
+                    IsPublished = c.IsPublished
+                })
+                .ToListAsync();
 
-        var products = await query
-            .Skip((validPage - 1) * validPageSize)
-            .Take(validPageSize)
+            return new ServiceResponse<List<ProductsDto>>
+            {
+                Status = 200,
+                Message = "Lấy danh sách sản phẩm thành công.",
+                Data = products,
+                PageSize = validPageSize,
+                PageNumber = validPage,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling((double)totalCount / validPageSize)
+            };
+        }
+
+        products = await query
             .Select(c => new ProductsDto
             {
                 Id = c.Idproduct,
@@ -55,11 +86,7 @@ public class ProductService(
         {
             Status = 200,
             Message = "Lấy danh sách sản phẩm thành công.",
-            Data = products,
-            PageSize = validPageSize,
-            PageNumber = validPage,
-            TotalCount = totalCount,
-            TotalPages = (int)Math.Ceiling((double)totalCount / validPageSize)
+            Data = products
         };
     }
 
@@ -91,11 +118,13 @@ public class ProductService(
             })
             .FirstOrDefaultAsync();
         if (product == null)
+        {
             return new ServiceResponse<ProductDto>
             {
                 Status = 404,
                 Message = "Không tìm thấy sản phẩm."
             };
+        }
 
         return new ServiceResponse<ProductDto>
         {
@@ -108,11 +137,13 @@ public class ProductService(
     public async Task<ServiceResponse> CreateProductAsync(ProductUpdateDto dto, string? sub)
     {
         if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Thông tin người dùng không hợp lệ"
             };
+        }
 
         var uploadedImageUrls = new List<string>();
 
@@ -120,21 +151,32 @@ public class ProductService(
         try
         {
             var isNameExist = await appDbContext.Products.AnyAsync(p => p.Name == dto.Name);
-            if (isNameExist) return new ServiceResponse { Status = 400, Message = "Tên sản phẩm đã tồn tại." };
+            if (isNameExist)
+            {
+                return new ServiceResponse { Status = 400, Message = "Tên sản phẩm đã tồn tại." };
+            }
 
             var type = await appDbContext.Types
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Name == dto.TypeName);
-            if (type == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy loại sản phẩm." };
+            if (type == null)
+            {
+                return new ServiceResponse { Status = 404, Message = "Không tìm thấy loại sản phẩm." };
+            }
 
             var company = await appDbContext.Companies
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Name == dto.CompanyName);
-            if (company == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
+            if (company == null)
+            {
+                return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
+            }
 
             var mainImageUrl = await SaveFile.SaveFileAsync(dto.Image);
             if (string.IsNullOrEmpty(mainImageUrl))
+            {
                 return new ServiceResponse { Status = 400, Message = "Lỗi khi tải ảnh chính lên hệ thống." };
+            }
 
             uploadedImageUrls.Add(mainImageUrl);
 
@@ -161,7 +203,10 @@ public class ProductService(
                 foreach (var file in dto.Images)
                 {
                     var imageUrl = await SaveFile.SaveFileAsync(file);
-                    if (string.IsNullOrEmpty(imageUrl)) continue;
+                    if (string.IsNullOrEmpty(imageUrl))
+                    {
+                        continue;
+                    }
 
                     uploadedImageUrls.Add(imageUrl);
 
@@ -173,7 +218,10 @@ public class ProductService(
                     });
                 }
 
-                if (productImages.Count != 0) await appDbContext.Images.AddRangeAsync(productImages);
+                if (productImages.Count != 0)
+                {
+                    await appDbContext.Images.AddRangeAsync(productImages);
+                }
             }
 
             if (dto.Colors.Count != 0)
@@ -182,7 +230,10 @@ public class ProductService(
                     where !string.IsNullOrEmpty(color)
                     select new Color { Idproduct = newProductId, Name = color }).ToList();
 
-                if (productColors.Count != 0) await appDbContext.Colors.AddRangeAsync(productColors);
+                if (productColors.Count != 0)
+                {
+                    await appDbContext.Colors.AddRangeAsync(productColors);
+                }
             }
 
             if (dto.Sizes.Count != 0)
@@ -191,7 +242,10 @@ public class ProductService(
                     where !string.IsNullOrEmpty(size)
                     select new Size { Idproduct = newProductId, Name = size }).ToList();
 
-                if (productSizes.Count != 0) await appDbContext.Sizes.AddRangeAsync(productSizes);
+                if (productSizes.Count != 0)
+                {
+                    await appDbContext.Sizes.AddRangeAsync(productSizes);
+                }
             }
 
             await appDbContext.SaveChangesAsync();
@@ -220,11 +274,13 @@ public class ProductService(
     public async Task<ServiceResponse> UpdateProductAsync(Guid id, ProductUpdateDto dto, string? sub)
     {
         if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Thông tin người dùng không hợp lệ"
             };
+        }
 
         var uploadedImageUrls = new List<string>();
         var oldImageUrlsToDeleteOnSuccess = new List<string>();
@@ -235,23 +291,35 @@ public class ProductService(
             .Include(p => p.Sizes)
             .FirstOrDefaultAsync(p => p.Idproduct == id);
 
-        if (product == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
+        if (product == null)
+        {
+            return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
+        }
 
         await using var transaction = await appDbContext.Database.BeginTransactionAsync();
         try
         {
             var isNameExist = await appDbContext.Products.AnyAsync(p => p.Name == dto.Name && p.Idproduct != id);
-            if (isNameExist) return new ServiceResponse { Status = 400, Message = "Tên sản phẩm đã tồn tại." };
+            if (isNameExist)
+            {
+                return new ServiceResponse { Status = 400, Message = "Tên sản phẩm đã tồn tại." };
+            }
 
             var type = await appDbContext.Types
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.Name == dto.TypeName);
-            if (type == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy loại sản phẩm." };
+            if (type == null)
+            {
+                return new ServiceResponse { Status = 404, Message = "Không tìm thấy loại sản phẩm." };
+            }
 
             var company = await appDbContext.Companies
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Name == dto.CompanyName);
-            if (company == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
+            if (company == null)
+            {
+                return new ServiceResponse { Status = 404, Message = "Không tìm thấy thương hiệu." };
+            }
 
             product.Name = dto.Name;
             product.Price = dto.Price;
@@ -262,7 +330,9 @@ public class ProductService(
 
             var newMainImageUrl = await SaveFile.SaveFileAsync(dto.Image);
             if (string.IsNullOrEmpty(newMainImageUrl))
+            {
                 return new ServiceResponse { Status = 400, Message = "Lỗi khi tải ảnh chính lên hệ thống." };
+            }
 
             uploadedImageUrls.Add(newMainImageUrl);
             oldImageUrlsToDeleteOnSuccess.Add(product.Image);
@@ -281,7 +351,10 @@ public class ProductService(
                 foreach (var file in dto.Images)
                 {
                     var imageUrl = await SaveFile.SaveFileAsync(file);
-                    if (string.IsNullOrEmpty(imageUrl)) continue;
+                    if (string.IsNullOrEmpty(imageUrl))
+                    {
+                        continue;
+                    }
 
                     uploadedImageUrls.Add(imageUrl);
 
@@ -293,10 +366,16 @@ public class ProductService(
                     });
                 }
 
-                if (productImages.Count != 0) await appDbContext.Images.AddRangeAsync(productImages);
+                if (productImages.Count != 0)
+                {
+                    await appDbContext.Images.AddRangeAsync(productImages);
+                }
             }
 
-            if (product.Colors.Count != 0) appDbContext.Colors.RemoveRange(product.Colors);
+            if (product.Colors.Count != 0)
+            {
+                appDbContext.Colors.RemoveRange(product.Colors);
+            }
 
             if (dto.Colors.Count != 0)
             {
@@ -304,10 +383,16 @@ public class ProductService(
                     where !string.IsNullOrEmpty(color)
                     select new Color { Idproduct = id, Name = color }).ToList();
 
-                if (productColors.Count != 0) await appDbContext.Colors.AddRangeAsync(productColors);
+                if (productColors.Count != 0)
+                {
+                    await appDbContext.Colors.AddRangeAsync(productColors);
+                }
             }
 
-            if (product.Sizes.Count != 0) appDbContext.Sizes.RemoveRange(product.Sizes);
+            if (product.Sizes.Count != 0)
+            {
+                appDbContext.Sizes.RemoveRange(product.Sizes);
+            }
 
             if (dto.Sizes.Count != 0)
             {
@@ -315,7 +400,10 @@ public class ProductService(
                     where !string.IsNullOrEmpty(size)
                     select new Size { Idproduct = id, Name = size }).ToList();
 
-                if (productSizes.Count != 0) await appDbContext.Sizes.AddRangeAsync(productSizes);
+                if (productSizes.Count != 0)
+                {
+                    await appDbContext.Sizes.AddRangeAsync(productSizes);
+                }
             }
 
             await appDbContext.SaveChangesAsync();
@@ -347,15 +435,21 @@ public class ProductService(
     public async Task<ServiceResponse> DeleteProductAsync(Guid id, string? sub)
     {
         if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Thông tin người dùng không hợp lệ"
             };
+        }
+
         var product = await appDbContext.Products
             .FirstOrDefaultAsync(p => p.Idproduct == id);
 
-        if (product == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
+        if (product == null)
+        {
+            return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
+        }
 
         product.IsDeleted = !product.IsDeleted;
         product.UpdateBy = userId;
@@ -372,15 +466,31 @@ public class ProductService(
     public async Task<ServiceResponse> PublishProductAsync(Guid id, string? sub)
     {
         if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+        {
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Thông tin người dùng không hợp lệ"
             };
+        }
+
         var product = await appDbContext.Products
+            .Include(p => p.ComboProducts)
             .FirstOrDefaultAsync(p => p.Idproduct == id);
 
-        if (product == null) return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
+        if (product == null)
+        {
+            return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
+        }
+
+        if (product.ComboProducts.Count != 0)
+        {
+            return new ServiceResponse
+            {
+                Status = 400,
+                Message = "Không thể thay đổi trạng thái xuất bản của sản phẩm vì có combo liên quan."
+            };
+        }
 
         product.IsPublished = !product.IsPublished;
         product.UpdateBy = userId;

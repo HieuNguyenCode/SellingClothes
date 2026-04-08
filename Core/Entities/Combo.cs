@@ -42,6 +42,10 @@ public class Combo
     /// </summary>
     public DateTime? CreateAt { get; set; }
 
+    public bool IsPublished { get; set; }
+
+    public bool? IsDeleted { get; set; }
+
     public virtual ICollection<ComboProduct> ComboProducts { get; set; } = new List<ComboProduct>();
 
     public virtual User CreateByNavigation { get; set; } = null!;
