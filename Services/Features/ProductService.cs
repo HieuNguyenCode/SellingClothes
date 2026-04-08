@@ -482,12 +482,12 @@ public class ProductService(
             return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm." };
         }
 
-        if (product.ComboProducts.Count != 0)
+        if (product.IsDeleted)
         {
             return new ServiceResponse
             {
                 Status = 400,
-                Message = "Không thể thay đổi trạng thái xuất bản của sản phẩm vì có combo liên quan."
+                Message = "Không thể thay đổi trạng thái xuất bản của sản phẩm đã bị xóa."
             };
         }
 
