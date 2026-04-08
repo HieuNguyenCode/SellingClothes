@@ -10,5 +10,5 @@ public class ComboUpdateDto
 
     public IFormFile Image { get; set; } = null!;
 
-    public List<ComboProductUpdateDto> ListProducts { get; set; }
+    public List<ComboProductUpdateDto> ListProducts { get; set; } 
 }

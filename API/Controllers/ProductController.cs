@@ -49,7 +49,7 @@ public class ProductController(IProductService productService) : BaseController
     }
 
     [Authorize(Roles = "admin")]
-    [HttpPatch("{id:guid}/")]
+    [HttpPatch("{id:guid}/Publish")]
     public async Task<IActionResult> PublishProduct(Guid id)
     {
         return Result(await productService.PublishProductAsync(id, User.FindFirstValue(ClaimTypes.NameIdentifier)));

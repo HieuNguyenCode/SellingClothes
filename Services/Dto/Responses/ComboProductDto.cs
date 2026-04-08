@@ -5,5 +5,8 @@ public class ComboProductDto
     public Guid Id { get; set; }
 
     public string Name { get; set; } = null!;
+    
+    public string Image { get; set; } = null!;
+
     public int Quantity { get; set; }
 }

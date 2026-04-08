@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using API.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Services.Dto.Requests;
 using Services.Interfaces;
@@ -23,21 +24,31 @@ public class ComboController(IComboService comboService) : BaseController
         return Result(await comboService.GetComboByIdAsync(id));
     }
 
+    [Authorize(Roles = "admin")]
     [HttpPost]
     public async Task<IActionResult> AddCombo([FromForm] ComboUpdateDto combo)
     {
         return Result(await comboService.AddComboAsync(combo, User.FindFirstValue(ClaimTypes.NameIdentifier)));
     }
 
+    [Authorize(Roles = "admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCombo(Guid id, [FromForm] ComboUpdateDto combo)
     {
         return Result(await comboService.UpdateComboAsync(id, combo, User.FindFirstValue(ClaimTypes.NameIdentifier)));
     }
 
+    [Authorize(Roles = "admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCombo(Guid id)
     {
         return Result(await comboService.DeleteComboAsync(id));
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpPatch("{id:guid}/Publish")]
+    public async Task<IActionResult> PublishCombo(Guid id)
+    {
+        return Result(await comboService.PublishCombotAsync(id, User.FindFirstValue(ClaimTypes.NameIdentifier)));
     }
 }

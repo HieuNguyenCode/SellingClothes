@@ -18,7 +18,6 @@ public class ProductService(
         int? pageSize)
     {
         var now = DateTime.Now;
-        Console.WriteLine(role);
         var query = appDbContext.Products.AsNoTracking().AsQueryable()
             .Where(p => !p.IsDeleted && (role == "admin" || p.IsPublished));
 

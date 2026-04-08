@@ -46,7 +46,8 @@ public class ComboService(
                     PriceSale = c.SaleCombos
                         .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
                         .Min(s => (int?)s.Price),
-                    Image = c.Image
+                    Image = c.Image,
+                    IsPublished = c.IsPublished
                 })
                 .ToListAsync();
 
@@ -104,6 +105,7 @@ public class ComboService(
                 {
                     Id = cp.IdproductNavigation.Idproduct,
                     Name = cp.IdproductNavigation.Name,
+                    Image = cp.IdproductNavigation.Image,
                     Quantity = cp.Quantity
                 }).ToList()
             })
@@ -372,5 +374,30 @@ public class ComboService(
         await appDbContext.SaveChangesAsync();
 
         return new ServiceResponse { Status = 200, Message = "Xóa Combo thành công." };
+    }
+
+    public async Task<ServiceResponse> PublishCombotAsync(Guid id, string? sub)
+    {
+        if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+        {
+            return new ServiceResponse
+            {
+                Status = 400,
+                Message = "Thông tin người dùng không hợp lệ"
+            };
+        }
+
+        var combo = await appDbContext.Combos.FirstOrDefaultAsync(c => c.Idcombo == id);
+
+        if (combo == null)
+        {
+            return new ServiceResponse { Status = 404, Message = "Không tìm thấy Combo." };
+        }
+
+        combo.IsPublished = !combo.IsPublished;
+        combo.UpdateBy = userId;
+        await appDbContext.SaveChangesAsync();
+
+        return new ServiceResponse { Status = 200, Message = "Đã xuất bản Combo." };
     }
 }
