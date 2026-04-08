@@ -1,16 +1,19 @@
-﻿namespace Core.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public class Type
+namespace APINhatKyDienTu.Core.Entities;
+
+public partial class Type
 {
     /// <summary>
-    ///     Mã định danh loại sản phẩm (danh mục)
+    /// Mã định danh loại sản phẩm (danh mục)
     /// </summary>
     public Guid Idtype { get; set; }
 
     /// <summary>
-    ///     Tên loại sản phẩm (VD: Áo khoác, Quần Jean)
+    /// Tên loại sản phẩm (VD: Áo khoác, Quần Jean)
     /// </summary>
     public string Name { get; set; } = null!;
 
-    public virtual ICollection<Product> Products { get; set; } = new List<Product>();
+    public virtual ICollection<Product> Product { get; set; } = new List<Product>();
 }

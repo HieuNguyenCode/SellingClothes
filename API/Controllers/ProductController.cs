@@ -26,7 +26,7 @@ public class ProductController(IProductService productService) : BaseController
 
     [Authorize(Roles = "admin")]
     [HttpPost]
-    public async Task<IActionResult> CreateProduct([FromBody] ProductUpdateDto productCreateDto)
+    public async Task<IActionResult> CreateProduct([FromForm] ProductUpdateDto productCreateDto)
     {
         return Result(await productService.CreateProductAsync(productCreateDto,
             User.FindFirstValue(ClaimTypes.NameIdentifier)));
@@ -34,7 +34,7 @@ public class ProductController(IProductService productService) : BaseController
 
     [Authorize(Roles = "admin")]
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> UpdateProduct(Guid id, [FromBody] ProductUpdateDto productUpdateDto)
+    public async Task<IActionResult> UpdateProduct(Guid id, [FromForm] ProductUpdateDto productUpdateDto)
     {
         return Result(await productService.UpdateProductAsync(id, productUpdateDto,
             User.FindFirstValue(ClaimTypes.NameIdentifier)));

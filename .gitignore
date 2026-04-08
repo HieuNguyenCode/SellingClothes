@@ -4,5 +4,6 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 /API/Logs
+/API/wwwroot
 .env
 /Docker/

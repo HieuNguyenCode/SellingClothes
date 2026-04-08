@@ -3,6 +3,7 @@ using API.Global;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
@@ -63,7 +64,7 @@ builder.Services.AddAuthentication(options =>
         {
             OnChallenge = async context => // Thêm từ khóa 'async'
             {
-                context.HandleResponse(); // Ngăn mặc định
+                context.HandleResponse();// Ngăn mặc định
 
                 context.Response.StatusCode = 401;
                 context.Response.ContentType = "application/json";
@@ -120,6 +121,18 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+
+var wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+if (!Directory.Exists(wwwrootPath))
+{
+    Directory.CreateDirectory(wwwrootPath);
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(wwwrootPath),
+    RequestPath = ""
+});
 
 app.Use(async (context, next) =>
 {

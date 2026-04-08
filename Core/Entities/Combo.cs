@@ -1,56 +1,59 @@
-﻿namespace Core.Entities;
+﻿using System;
+using System.Collections.Generic;
 
-public class Combo
+namespace APINhatKyDienTu.Core.Entities;
+
+public partial class Combo
 {
     /// <summary>
-    ///     Mã định danh combo sản phẩm
+    /// Mã định danh combo sản phẩm
     /// </summary>
     public Guid Idcombo { get; set; }
 
     /// <summary>
-    ///     Tên gọi của combo
+    /// Tên gọi của combo
     /// </summary>
     public string Name { get; set; } = null!;
 
     /// <summary>
-    ///     Giá bán tổng hợp của combo
+    /// Giá bán tổng hợp của combo
     /// </summary>
     public int Price { get; set; }
 
     /// <summary>
-    ///     Đường dẫn lưu trữ file hình ảnh đại diện combo
+    /// Đường dẫn lưu trữ file hình ảnh đại diện combo
     /// </summary>
     public string Image { get; set; } = null!;
 
     /// <summary>
-    ///     Người cập nhật cuối cùng
+    /// Người cập nhật cuối cùng
     /// </summary>
     public Guid? UpdateBy { get; set; }
 
     /// <summary>
-    ///     Người tạo combo
+    /// Người tạo combo
     /// </summary>
     public Guid CreateBy { get; set; }
 
     /// <summary>
-    ///     Thời gian cập nhật cuối
+    /// Thời gian cập nhật cuối
     /// </summary>
     public DateTime? UpdateAt { get; set; }
 
     /// <summary>
-    ///     Thời gian tạo combo
+    /// Thời gian tạo combo
     /// </summary>
     public DateTime? CreateAt { get; set; }
 
-    public virtual ICollection<ComboProduct> ComboProducts { get; set; } = new List<ComboProduct>();
+    public virtual ICollection<Comboproduct> Comboproduct { get; set; } = new List<Comboproduct>();
 
-    public virtual User CreateByNavigation { get; set; } = null!;
+    public virtual Users CreateByNavigation { get; set; } = null!;
 
-    public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+    public virtual ICollection<Orderdetail> Orderdetail { get; set; } = new List<Orderdetail>();
 
-    public virtual ICollection<SaleCombo> SaleCombos { get; set; } = new List<SaleCombo>();
+    public virtual ICollection<Salecombo> Salecombo { get; set; } = new List<Salecombo>();
 
-    public virtual ICollection<ShoppingCartItem> ShoppingCartItems { get; set; } = new List<ShoppingCartItem>();
+    public virtual ICollection<Shoppingcartitem> Shoppingcartitem { get; set; } = new List<Shoppingcartitem>();
 
-    public virtual User? UpdateByNavigation { get; set; }
+    public virtual Users? UpdateByNavigation { get; set; }
 }

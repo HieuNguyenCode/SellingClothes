@@ -34,7 +34,10 @@ CREATE TABLE IF NOT EXISTS Product
     IDType     CHAR(36)     NOT NULL COMMENT 'Khóa ngoại tham chiếu đến loại sản phẩm',
     `Describe` TEXT COMMENT 'Mô tả chi tiết về sản phẩm',
     Image      VARCHAR(255) NOT NULL COMMENT 'Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm',
-
+    
+    IsPublished BOOLEAN      NOT NULL             DEFAULT TRUE COMMENT 'Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng',
+    IsDeleted   BOOLEAN      NOT NULL             DEFAULT FALSE COMMENT 'Cờ đánh dấu sản phẩm đã bị xóa (soft delete)',
+    
     UpdateBy   CHAR(36) COMMENT 'Người cập nhật cuối cùng',
     CreateBy   CHAR(36)     NOT NULL COMMENT 'Người tạo bản ghi',
     UpdateAt   TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật cuối',
@@ -256,3 +259,6 @@ CREATE TABLE IF NOT EXISTS OrderDetail
         (IDProduct IS NULL AND IDCombo IS NOT NULL)
         )
 );
+
+INSERT INTO users (UserName, Password, Role) VALUES 
+('admin', '$2a$11$/5EILZrELlTN5FTThpcm/uM1LaVjkfCRwjeBJOxBBBtIJFOVJNRWi', 'admin');

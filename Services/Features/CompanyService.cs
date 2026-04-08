@@ -11,7 +11,7 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
 {
     public async Task<ServiceResponse<List<CompanysDto>>> GetAllCompanies(string? search, int? page, int? pageSize)
     {
-        var query = appDbContext.Companies.AsNoTracking().AsQueryable();
+        var query = appDbContext.Company.AsNoTracking().AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search)) query = query.Where(c => c.Name.Contains(search));
 
@@ -40,7 +40,7 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
 
     public async Task<ServiceResponse<CompanysDto>> GetCompanyById(Guid id)
     {
-        var company = await appDbContext.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Idcompany == id);
+        var company = await appDbContext.Company.AsNoTracking().FirstOrDefaultAsync(c => c.Idcompany == id);
         if (company == null)
             return new ServiceResponse<CompanysDto>
             {
@@ -63,7 +63,7 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
 
     public async Task<ServiceResponse> CreateCompany(CompanyUpdateDto companyCreateDto)
     {
-        var company = await appDbContext.Companies.AsNoTracking()
+        var company = await appDbContext.Company.AsNoTracking()
             .FirstOrDefaultAsync(c => c.Name == companyCreateDto.Name)
             .ConfigureAwait(false);
         if (company != null)
@@ -77,7 +77,7 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
         {
             Name = companyCreateDto.Name
         };
-        await appDbContext.Companies.AddAsync(newCompany);
+        await appDbContext.Company.AddAsync(newCompany);
         await appDbContext.SaveChangesAsync().ConfigureAwait(false);
         return new ServiceResponse
         {
@@ -88,7 +88,7 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
 
     public async Task<ServiceResponse> UpdateCompany(Guid id, CompanyUpdateDto companyUpdateDto)
     {
-        var company = await appDbContext.Companies.FirstOrDefaultAsync(c => c.Idcompany == id);
+        var company = await appDbContext.Company.FirstOrDefaultAsync(c => c.Idcompany == id);
         if (company == null)
             return new ServiceResponse
             {
@@ -96,7 +96,7 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
                 Message = "Không tìm thấy công ty."
             };
 
-        var isNameExist = await appDbContext.Companies.AsNoTracking()
+        var isNameExist = await appDbContext.Company.AsNoTracking()
             .AnyAsync(c => c.Name == companyUpdateDto.Name && c.Idcompany != id);
         if (isNameExist)
             return new ServiceResponse
@@ -106,7 +106,7 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
             };
 
         company.Name = companyUpdateDto.Name;
-        appDbContext.Companies.Update(company);
+        appDbContext.Company.Update(company);
         await appDbContext.SaveChangesAsync().ConfigureAwait(false);
         return new ServiceResponse
         {
@@ -117,8 +117,8 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
 
     public async Task<ServiceResponse> DeleteCompany(Guid id)
     {
-        var company = await appDbContext.Companies
-            .Include(c => c.Products)
+        var company = await appDbContext.Company
+            .Include(c => c.Product)
             .FirstOrDefaultAsync(c => c.Idcompany == id);
         if (company == null)
             return new ServiceResponse
@@ -127,14 +127,14 @@ public class CompanyService(AppDbContext appDbContext) : ICompanyService
                 Message = "Không tìm thấy công ty."
             };
 
-        if (company.Products.Count != 0)
+        if (company.Product.Count != 0)
             return new ServiceResponse
             {
                 Status = 400,
                 Message = "Không thể xóa công ty vì vẫn còn sản phẩm liên quan."
             };
 
-        appDbContext.Companies.Remove(company);
+        appDbContext.Company.Remove(company);
         await appDbContext.SaveChangesAsync().ConfigureAwait(false);
         return new ServiceResponse
         {

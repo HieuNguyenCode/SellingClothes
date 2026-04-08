@@ -11,7 +11,7 @@ namespace Services.Features;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
-    public string GenerateAccessToken(User user)
+    public string GenerateAccessToken(Users user)
     {
         var claims = new List<Claim>
         {
@@ -25,7 +25,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
         return CreateToken(claims, expires);
     }
 
-    public string GenerateRefreshToken(User user)
+    public string GenerateRefreshToken(Users user)
     {
         var claims = new List<Claim>
         {

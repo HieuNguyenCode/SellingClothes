@@ -95,7 +95,7 @@ public class AuthService(
             };
         }
 
-        var newUser = new User
+        var newUser = new Users
         {
             UserName = registerDto.Username,
             Password = BCrypt.Net.BCrypt.HashPassword(registerDto.Password)

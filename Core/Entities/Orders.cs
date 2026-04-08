@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace APINhatKyDienTu.Core.Entities;
 
-public partial class Order
+public partial class Orders
 {
     /// <summary>
     /// Mã định danh hóa đơn/đơn hàng
@@ -75,11 +75,11 @@ public partial class Order
     /// </summary>
     public DateTime? CreateAt { get; set; }
 
-    public virtual User? CreateByNavigation { get; set; }
+    public virtual Users? CreateByNavigation { get; set; }
 
-    public virtual User? IduserNavigation { get; set; }
+    public virtual Users? IduserNavigation { get; set; }
 
-    public virtual ICollection<Orderdetail> Orderdetails { get; set; } = new List<Orderdetail>();
+    public virtual ICollection<Orderdetail> Orderdetail { get; set; } = new List<Orderdetail>();
 
-    public virtual User? UpdateByNavigation { get; set; }
+    public virtual Users? UpdateByNavigation { get; set; }
 }
