@@ -1,16 +1,9 @@
-namespace Services.Dto.Responses;
+﻿namespace Services.Dto.Requests;
 
-public class SaleCombosDto
+public class SaleComboUpdateDto
 {
-    public Guid Id { get; set; }
-
     public string Name { get; set; }
-
-    public string Image { get; set; }
-
     public int Price { get; set; }
-
     public DateTime StartDate { get; set; }
-
     public DateTime? EndDate { get; set; }
 }
