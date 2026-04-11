@@ -65,4 +65,9 @@ public class User
         new List<ShoppingCartItem>();
 
     public virtual ICollection<ShoppingCart> ShoppingCartUpdateByNavigations { get; set; } = new List<ShoppingCart>();
+
+    public virtual ICollection<CartComboProduct> CartComboProductCreateByNavigations { get; set; } =
+        new List<CartComboProduct>();
+
+    public virtual ICollection<CartComboProduct> CartComboProductUpdateByNavigations { get; set; } = new List<CartComboProduct>();
 }

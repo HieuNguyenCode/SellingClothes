@@ -69,6 +69,8 @@ public class Product
 
     public virtual ICollection<Color> Colors { get; set; } = new List<Color>();
 
+    public virtual ICollection<Color> Color { get; set; } = new List<Color>();
+
     public virtual ICollection<ComboProduct> ComboProducts { get; set; } = new List<ComboProduct>();
 
     public virtual User CreateByNavigation { get; set; } = null!;
@@ -88,4 +90,6 @@ public class Product
     public virtual ICollection<Size> Sizes { get; set; } = new List<Size>();
 
     public virtual User? UpdateByNavigation { get; set; }
+
+    public virtual ICollection<CartComboProduct> CartComboProducts { get; set; } = new List<CartComboProduct>();
 }

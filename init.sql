@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS Image
     CONSTRAINT fk_img_product FOREIGN KEY (IDProduct) REFERENCES Product (IDProduct),
     CONSTRAINT fk_img_user FOREIGN KEY (CreateBy) REFERENCES users (IDUser)
 );
+
 CREATE TABLE IF NOT EXISTS Combo
 (
     IDCombo  CHAR(36)     NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh combo sản phẩm',
@@ -203,6 +204,26 @@ CREATE TABLE IF NOT EXISTS ShoppingCartItem
         (IDProduct IS NOT NULL AND IDCombo IS NULL) OR
         (IDProduct IS NULL AND IDCombo IS NOT NULL)
         )
+);
+
+CREATE TABLE IF NOT EXISTS CartComboProduct
+(
+    IDCartComboProduct CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã chi tiết liên kết Combo và Product trong giỏ hàng',
+    IDShoppingCartItem CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu đến món hàng trong giỏ (dòng sản phẩm hoặc combo)',
+    IDProduct         CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu đến sản phẩm nằm trong combo của món hàng này',
+    Quantity          INT      NOT NULL COMMENT 'Số lượng sản phẩm này trong combo của món hàng',
+    IDColor            CHAR(36) NULL COMMENT 'Màu sắc cụ thể của sản phẩm khách đã chọn',
+    IDSize             CHAR(36) NULL COMMENT 'Kích cỡ cụ thể của sản',
+    UpdateBy          CHAR(36) COMMENT 'Người cập nhật liên kết',
+    CreateBy          CHAR(36) NOT NULL COMMENT 'Người tạo liên kết',
+    UpdateAt          TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật cuối',
+    CreateAt          TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian tạo bản ghi',
+    CONSTRAINT fk_ccp_cart_item FOREIGN KEY (IDShoppingCartItem) REFERENCES ShoppingCartItem (IDShoppingCartItem),
+    CONSTRAINT fk_ccp_product FOREIGN KEY (IDProduct) REFERENCES Product (IDProduct),
+    CONSTRAINT fk_ccp_user_update FOREIGN KEY (UpdateBy) REFERENCES users (IDUser),
+    CONSTRAINT fk_ccp_user_create FOREIGN KEY (CreateBy) REFERENCES users (IDUser),
+    CONSTRAINT fk_ccp_color FOREIGN KEY (IDColor) REFERENCES Color (IDColor),
+    CONSTRAINT fk_ccp_size FOREIGN KEY (IDSize) REFERENCES Size (IDSize)
 );
 
 CREATE TABLE IF NOT EXISTS Orders

@@ -62,6 +62,8 @@ public class ShoppingCartItem
     /// </summary>
     public DateTime? CreateAt { get; set; }
 
+    public virtual ICollection<CartComboProduct> Cartcomboproduct { get; set; } = new List<CartComboProduct>();
+
     public virtual User? CreateByNavigation { get; set; }
 
     public virtual Color? IdcolorNavigation { get; set; }

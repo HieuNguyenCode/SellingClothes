@@ -103,6 +103,7 @@ builder.Services.AddScoped<ITypeService, TypeService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IComboService, ComboService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
+builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
