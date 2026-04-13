@@ -1,6 +1,5 @@
 ﻿using Core.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Type = Core.Entities.Type;
 
 namespace Infrastructure.Data;
@@ -16,7 +15,7 @@ public partial class AppDbContext : DbContext
     {
     }
 
-    public virtual DbSet<CartComboProduct> Cartcomboproduct { get; set; }
+    public virtual DbSet<CartComboProduct> CartComboProducts { get; set; }
 
     public virtual DbSet<Color> Colors { get; set; }
 
@@ -60,7 +59,7 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.IdcartComboProduct).HasName("PRIMARY");
 
-            entity.ToTable("cartcomboproduct");
+            entity.ToTable("CartComboProduct");
 
             entity.HasIndex(e => e.IdshoppingCartItem, "fk_ccp_cart_item");
 
@@ -109,7 +108,7 @@ public partial class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_ccp_user_create");
 
-            entity.HasOne(d => d.IdcolorNavigation).WithMany(p => p.Cartcomboproduct)
+            entity.HasOne(d => d.IdcolorNavigation).WithMany(p => p.CartComboProducts)
                 .HasForeignKey(d => d.Idcolor)
                 .HasConstraintName("fk_ccp_color");
 
@@ -118,12 +117,12 @@ public partial class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_ccp_product");
 
-            entity.HasOne(d => d.IdshoppingCartItemNavigation).WithMany(p => p.Cartcomboproduct)
+            entity.HasOne(d => d.IdshoppingCartItemNavigation).WithMany(p => p.CartComboProducts)
                 .HasForeignKey(d => d.IdshoppingCartItem)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_ccp_cart_item");
 
-            entity.HasOne(d => d.IdsizeNavigation).WithMany(p => p.Cartcomboproduct)
+            entity.HasOne(d => d.IdsizeNavigation).WithMany(p => p.CartComboProducts)
                 .HasForeignKey(d => d.Idsize)
                 .HasConstraintName("fk_ccp_size");
 
@@ -150,7 +149,7 @@ public partial class AppDbContext : DbContext
                 .HasMaxLength(255)
                 .HasComment("Tên màu sắc (VD: Đen, Trắng, Đỏ)");
 
-            entity.HasOne(d => d.IdproductNavigation).WithMany(p => p.Color)
+            entity.HasOne(d => d.IdproductNavigation).WithMany(p => p.Colors)
                 .HasForeignKey(d => d.Idproduct)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_color_product");
@@ -177,8 +176,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Image)
                 .HasMaxLength(255)
                 .HasComment("Đường dẫn lưu trữ file hình ảnh đại diện combo");
-            entity.Property(e => e.IsDeleted)
-                .HasDefaultValueSql("'0'");
+            entity.Property(e => e.IsDeleted).HasComment("Cờ đánh dấu sản phẩm đã bị xóa (soft delete)");
+            entity.Property(e => e.IsPublished)
+                .HasComment("Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng");
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasComment("Tên gọi của combo");
@@ -206,7 +206,7 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.IdcomboProduct).HasName("PRIMARY");
 
-            entity.ToTable("comboproduct");
+            entity.ToTable("ComboProduct");
 
             entity.HasIndex(e => e.Idcombo, "fk_cp_combo");
 
@@ -312,6 +312,75 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("fk_img_product");
         });
 
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.HasKey(e => e.Idorder).HasName("PRIMARY");
+
+            entity.HasIndex(e => e.Iduser, "fk_order_user");
+
+            entity.HasIndex(e => e.CreateBy, "fk_order_user_create");
+
+            entity.HasIndex(e => e.UpdateBy, "fk_order_user_update");
+
+            entity.Property(e => e.Idorder)
+                .HasComment("Mã định danh hóa đơn/đơn hàng")
+                .HasColumnName("IDOrder");
+            entity.Property(e => e.CreateAt)
+                .HasDefaultValueSql("current_timestamp()")
+                .HasComment("Thời điểm chốt đơn hàng")
+                .HasColumnType("timestamp");
+            entity.Property(e => e.CreateBy).HasComment("Người khởi tạo đơn hàng");
+            entity.Property(e => e.CustomerName)
+                .HasMaxLength(255)
+                .HasComment("Họ tên người nhận hàng");
+            entity.Property(e => e.Iduser)
+                .HasComment("Tài khoản người đặt mua (NULL nếu mua không cần tài khoản)")
+                .HasColumnName("IDUser");
+            entity.Property(e => e.OrderStatus)
+                .HasDefaultValueSql("'Pending'")
+                .HasComment("Tiến trình xử lý đơn hàng")
+                .HasColumnType("enum('Pending','Processing','Shipped','Delivered','Cancelled')");
+            entity.Property(e => e.PaymentMethod)
+                .HasDefaultValueSql("'COD'")
+                .HasComment("Phương thức khách hàng chọn thanh toán")
+                .HasColumnType("enum('COD','BankTransfer','CreditCard')");
+            entity.Property(e => e.PaymentStatus)
+                .HasDefaultValueSql("'Unpaid'")
+                .HasComment("Trạng thái chuyển tiền thực tế")
+                .HasColumnType("enum('Unpaid','Paid','Refunded')");
+            entity.Property(e => e.PhoneNumber)
+                .HasMaxLength(20)
+                .HasComment("Số điện thoại liên hệ nhận hàng");
+            entity.Property(e => e.SessionId)
+                .HasMaxLength(255)
+                .HasComment("Mã phiên làm việc nếu khách vãng lai đặt hàng")
+                .HasColumnName("SessionID");
+            entity.Property(e => e.ShippingAddress)
+                .HasComment("Địa chỉ giao hàng chi tiết")
+                .HasColumnType("text");
+            entity.Property(e => e.TotalPrice)
+                .HasComment("Tổng số tiền khách phải thanh toán cho đơn này")
+                .HasColumnType("int(11)");
+            entity.Property(e => e.UpdateAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("current_timestamp()")
+                .HasComment("Thời gian cập nhật trạng thái cuối cùng")
+                .HasColumnType("timestamp");
+            entity.Property(e => e.UpdateBy).HasComment("Nhân viên/Hệ thống cập nhật trạng thái đơn");
+
+            entity.HasOne(d => d.CreateByNavigation).WithMany(p => p.OrderCreateByNavigations)
+                .HasForeignKey(d => d.CreateBy)
+                .HasConstraintName("fk_order_user_create");
+
+            entity.HasOne(d => d.IduserNavigation).WithMany(p => p.OrderIduserNavigations)
+                .HasForeignKey(d => d.Iduser)
+                .HasConstraintName("fk_order_user");
+
+            entity.HasOne(d => d.UpdateByNavigation).WithMany(p => p.OrderUpdateByNavigations)
+                .HasForeignKey(d => d.UpdateBy)
+                .HasConstraintName("fk_order_user_update");
+        });
+
         modelBuilder.Entity<OrderDetail>(entity =>
         {
             entity.HasKey(e => e.IdorderDetail).HasName("PRIMARY");
@@ -403,82 +472,11 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("fk_od_user_update");
         });
 
-        modelBuilder.Entity<Order>(entity =>
-        {
-            entity.HasKey(e => e.Idorder).HasName("PRIMARY");
-
-            entity.ToTable("orders");
-
-            entity.HasIndex(e => e.Iduser, "fk_order_user");
-
-            entity.HasIndex(e => e.CreateBy, "fk_order_user_create");
-
-            entity.HasIndex(e => e.UpdateBy, "fk_order_user_update");
-
-            entity.Property(e => e.Idorder)
-                .HasComment("Mã định danh hóa đơn/đơn hàng")
-                .HasColumnName("IDOrder");
-            entity.Property(e => e.CreateAt)
-                .HasDefaultValueSql("current_timestamp()")
-                .HasComment("Thời điểm chốt đơn hàng")
-                .HasColumnType("timestamp");
-            entity.Property(e => e.CreateBy).HasComment("Người khởi tạo đơn hàng");
-            entity.Property(e => e.CustomerName)
-                .HasMaxLength(255)
-                .HasComment("Họ tên người nhận hàng");
-            entity.Property(e => e.Iduser)
-                .HasComment("Tài khoản người đặt mua (NULL nếu mua không cần tài khoản)")
-                .HasColumnName("IDUser");
-            entity.Property(e => e.OrderStatus)
-                .HasDefaultValueSql("'Pending'")
-                .HasComment("Tiến trình xử lý đơn hàng")
-                .HasColumnType("enum('Pending','Processing','Shipped','Delivered','Cancelled')");
-            entity.Property(e => e.PaymentMethod)
-                .HasDefaultValueSql("'COD'")
-                .HasComment("Phương thức khách hàng chọn thanh toán")
-                .HasColumnType("enum('COD','BankTransfer','CreditCard')");
-            entity.Property(e => e.PaymentStatus)
-                .HasDefaultValueSql("'Unpaid'")
-                .HasComment("Trạng thái chuyển tiền thực tế")
-                .HasColumnType("enum('Unpaid','Paid','Refunded')");
-            entity.Property(e => e.PhoneNumber)
-                .HasMaxLength(20)
-                .HasComment("Số điện thoại liên hệ nhận hàng");
-            entity.Property(e => e.SessionId)
-                .HasMaxLength(255)
-                .HasComment("Mã phiên làm việc nếu khách vãng lai đặt hàng")
-                .HasColumnName("SessionID");
-            entity.Property(e => e.ShippingAddress)
-                .HasComment("Địa chỉ giao hàng chi tiết")
-                .HasColumnType("text");
-            entity.Property(e => e.TotalPrice)
-                .HasComment("Tổng số tiền khách phải thanh toán cho đơn này")
-                .HasColumnType("int(11)");
-            entity.Property(e => e.UpdateAt)
-                .ValueGeneratedOnAddOrUpdate()
-                .HasDefaultValueSql("current_timestamp()")
-                .HasComment("Thời gian cập nhật trạng thái cuối cùng")
-                .HasColumnType("timestamp");
-            entity.Property(e => e.UpdateBy).HasComment("Nhân viên/Hệ thống cập nhật trạng thái đơn");
-
-            entity.HasOne(d => d.CreateByNavigation).WithMany(p => p.OrderCreateByNavigations)
-                .HasForeignKey(d => d.CreateBy)
-                .HasConstraintName("fk_order_user_create");
-
-            entity.HasOne(d => d.IduserNavigation).WithMany(p => p.OrderIduserNavigations)
-                .HasForeignKey(d => d.Iduser)
-                .HasConstraintName("fk_order_user");
-
-            entity.HasOne(d => d.UpdateByNavigation).WithMany(p => p.OrderUpdateByNavigations)
-                .HasForeignKey(d => d.UpdateBy)
-                .HasConstraintName("fk_order_user_update");
-        });
-
         modelBuilder.Entity<Product>(entity =>
         {
             entity.HasKey(e => e.Idproduct).HasName("PRIMARY");
 
-            entity.ToTable("product");
+            entity.ToTable("Product");
 
             entity.HasIndex(e => e.Idcompany, "fk_product_com");
 
@@ -511,7 +509,8 @@ public partial class AppDbContext : DbContext
                 .HasMaxLength(255)
                 .HasComment("Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm");
             entity.Property(e => e.IsDeleted).HasComment("Cờ đánh dấu sản phẩm đã bị xóa (soft delete)");
-            entity.Property(e => e.IsPublished).HasComment("Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng");
+            entity.Property(e => e.IsPublished)
+                .HasComment("Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng");
             entity.Property(e => e.Name).HasComment("Tên sản phẩm");
             entity.Property(e => e.Price)
                 .HasComment("Giá niêm yết của sản phẩm")
@@ -625,7 +624,7 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.IdsaleProduct).HasName("PRIMARY");
 
-            entity.ToTable("saleproduct");
+            entity.ToTable("SaleProduct");
 
             entity.HasIndex(e => new { e.Idsale, e.Idproduct }, "IDSale").IsUnique();
 
@@ -689,7 +688,7 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.IdshoppingCart).HasName("PRIMARY");
 
-            entity.ToTable("shoppingcart");
+            entity.ToTable("ShoppingCart");
 
             entity.HasIndex(e => e.Iduser, "fk_cart_user");
 
@@ -708,10 +707,6 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Iduser)
                 .HasComment("Khóa ngoại định danh người dùng (NULL nếu chưa đăng nhập)")
                 .HasColumnName("IDUser");
-            entity.Property(e => e.SessionId)
-                .HasMaxLength(255)
-                .HasComment("Mã phiên làm việc lưu trên trình duyệt cho khách vãng lai")
-                .HasColumnName("SessionID");
             entity.Property(e => e.TotalPrice)
                 .HasComment("Tổng giá trị hiện tại của giỏ hàng")
                 .HasColumnType("int(11)");
@@ -826,7 +821,7 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Idsize).HasName("PRIMARY");
 
-            entity.ToTable("size");
+            entity.ToTable("Size");
 
             entity.HasIndex(e => e.Idproduct, "fk_size_product");
 
@@ -850,7 +845,7 @@ public partial class AppDbContext : DbContext
         {
             entity.HasKey(e => e.Idtype).HasName("PRIMARY");
 
-            ((EntityTypeBuilder)entity).ToTable("Type");
+            entity.ToTable("Type");
 
             entity.HasIndex(e => e.Name, "idx_type_name").IsUnique();
 

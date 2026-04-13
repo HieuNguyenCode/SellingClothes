@@ -23,6 +23,16 @@ public class Combo
     public string Image { get; set; } = null!;
 
     /// <summary>
+    ///     Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng
+    /// </summary>
+    public bool IsPublished { get; set; }
+
+    /// <summary>
+    ///     Cờ đánh dấu sản phẩm đã bị xóa (soft delete)
+    /// </summary>
+    public bool IsDeleted { get; set; }
+
+    /// <summary>
     ///     Người cập nhật cuối cùng
     /// </summary>
     public Guid? UpdateBy { get; set; }
@@ -41,10 +51,6 @@ public class Combo
     ///     Thời gian tạo combo
     /// </summary>
     public DateTime? CreateAt { get; set; }
-
-    public bool IsPublished { get; set; }
-
-    public bool? IsDeleted { get; set; }
 
     public virtual ICollection<ComboProduct> ComboProducts { get; set; } = new List<ComboProduct>();
 

@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS Size
     Name      VARCHAR(255) NOT NULL COMMENT 'Tên kích cỡ (VD: S, M, L, XL)',
 
     CONSTRAINT fk_size_product FOREIGN KEY (IDProduct) REFERENCES Product (IDProduct)
-);
+); 
 
 CREATE TABLE IF NOT EXISTS Color
 (
@@ -163,7 +163,6 @@ CREATE TABLE IF NOT EXISTS ShoppingCart
 (
     IDShoppingCart CHAR(36)     NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh giỏ hàng',
     IDUser         CHAR(36)     NULL COMMENT 'Khóa ngoại định danh người dùng (NULL nếu chưa đăng nhập)',
-    SessionID      VARCHAR(255) NULL COMMENT 'Mã phiên làm việc lưu trên trình duyệt cho khách vãng lai',
     TotalPrice     INT          NOT NULL             DEFAULT 0 COMMENT 'Tổng giá trị hiện tại của giỏ hàng',
 
     UpdateBy       CHAR(36)     NULL COMMENT 'Người cập nhật cuối cùng',

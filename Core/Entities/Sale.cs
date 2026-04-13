@@ -13,6 +13,5 @@ public class Sale
     public string Name { get; set; } = null!;
 
     public virtual ICollection<SaleCombo> SaleCombos { get; set; } = new List<SaleCombo>();
-
     public virtual ICollection<SaleProduct> SaleProducts { get; set; } = new List<SaleProduct>();
 }

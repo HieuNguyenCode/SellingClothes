@@ -22,6 +22,12 @@ public class User
     /// </summary>
     public string Role { get; set; } = null!;
 
+    public virtual ICollection<CartComboProduct> CartComboProductCreateByNavigations { get; set; } =
+        new List<CartComboProduct>();
+
+    public virtual ICollection<CartComboProduct> CartComboProductUpdateByNavigations { get; set; } =
+        new List<CartComboProduct>();
+
     public virtual ICollection<Combo> ComboCreateByNavigations { get; set; } = new List<Combo>();
 
     public virtual ICollection<ComboProduct> ComboProductCreateByNavigations { get; set; } = new List<ComboProduct>();
@@ -65,9 +71,4 @@ public class User
         new List<ShoppingCartItem>();
 
     public virtual ICollection<ShoppingCart> ShoppingCartUpdateByNavigations { get; set; } = new List<ShoppingCart>();
-
-    public virtual ICollection<CartComboProduct> CartComboProductCreateByNavigations { get; set; } =
-        new List<CartComboProduct>();
-
-    public virtual ICollection<CartComboProduct> CartComboProductUpdateByNavigations { get; set; } = new List<CartComboProduct>();
 }

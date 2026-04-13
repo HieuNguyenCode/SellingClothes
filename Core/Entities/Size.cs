@@ -17,7 +17,7 @@ public class Size
     /// </summary>
     public string Name { get; set; } = null!;
 
-    public virtual ICollection<CartComboProduct> Cartcomboproduct { get; set; } = new List<CartComboProduct>();
+    public virtual ICollection<CartComboProduct> CartComboProducts { get; set; } = new List<CartComboProduct>();
 
     public virtual Product IdproductNavigation { get; set; } = null!;
 

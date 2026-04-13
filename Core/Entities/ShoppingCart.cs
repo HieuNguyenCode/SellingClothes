@@ -13,11 +13,6 @@ public class ShoppingCart
     public Guid? Iduser { get; set; }
 
     /// <summary>
-    ///     Mã phiên làm việc lưu trên trình duyệt cho khách vãng lai
-    /// </summary>
-    public string? SessionId { get; set; }
-
-    /// <summary>
     ///     Tổng giá trị hiện tại của giỏ hàng
     /// </summary>
     public int TotalPrice { get; set; }

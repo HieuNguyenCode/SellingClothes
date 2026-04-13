@@ -12,136 +12,79 @@ public class ShoppingCartService(
     ILogger<ShoppingCartService> logger
 ) : IShoppingCartService
 {
-    public async Task<ServiceResponse<ShoppingCartDto>> GetShoppingCartAsync(string? sub, string? sessionId)
+    public async Task<ServiceResponse<ShoppingCartDto>> GetShoppingCartAsync(string? sub)
     {
-        Guid? userId = null;
-        if (!string.IsNullOrEmpty(sub) && Guid.TryParse(sub, out var parsedId))
-        {
-            userId = parsedId;
-        }
-
-        // 1. Kiểm tra: Phải có ít nhất UserId hoặc SessionId
-        if (userId == null && string.IsNullOrEmpty(sessionId))
-        {
+        if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
             return new ServiceResponse<ShoppingCartDto>
             {
                 Status = 400,
-                Message = "Không có thông tin định danh giỏ hàng."
+                Message = "Thông tin người dùng không hợp lệ"
             };
-        }
 
-        // 2. Xây dựng câu truy vấn linh hoạt (Ưu tiên User, sau đó đến Session)
-        var query = appDbContext.ShoppingCarts.AsQueryable();
-        if (userId.HasValue)
-        {
-            query = query.Where(x => x.Iduser == userId.Value);
-        }
-        else
-        {
-            query = query.Where(x => x.SessionId == sessionId);
-        }
-
-        // 3. Truy vấn và ánh xạ (Dùng toán tử 3 ngôi để EF Core có thể dịch sang SQL)
-        var cart = await query
-            .Select(x => new ShoppingCartDto
+        var shoppingCart = await appDbContext.ShoppingCarts
+            .Where(cart => cart.Iduser == userId)
+            .Select(cart => new ShoppingCartDto
             {
-                TotalPrice = x.TotalPrice,
-                ShoppingCartItems = x.ShoppingCartItems.Select(item =>
-                    item.IdcomboNavigation != null
-                        // Nếu là Combo
+                TotalPrice = cart.TotalPrice,
+                ShoppingCartItems = cart.ShoppingCartItems.Select(item =>
+                    item.Idproduct != null
                         ? new ShoppingCartItemDto
                         {
                             Id = item.IdshoppingCartItem,
-                            Name = item.IdcomboNavigation.Name,
-                            Price = item.UnitPrice,// Nên dùng UnitPrice lưu sẵn ở CartItem thay vì móc lại vào Product
+                            Name = item.IdproductNavigation!.Name,
+                            Size = item.IdsizeNavigation!.Name,
+                            Color = item.IdcolorNavigation!.Name,
+                            Image = item.IdproductNavigation.Image,
                             Quantity = item.Quantity,
-                            Products = item.Cartcomboproduct.Select(product => new CartComboProductDto
-                            {
-                                Id = product.Idproduct,
-                                Name = product.IdproductNavigation.Name,
-                                Image = product.IdproductNavigation.Image,
-                                Size = product.IdsizeNavigation != null ? product.IdsizeNavigation.Name : "",
-                                Color = product.IdcolorNavigation != null ? product.IdcolorNavigation.Name : "",
-                                Quantity = product.Quantity
-                            }).ToList()
+                            Price = item.IdproductNavigation.Price * item.Quantity
                         }
-                        // Nếu là Sản phẩm lẻ
                         : new ShoppingCartItemDto
                         {
                             Id = item.IdshoppingCartItem,
-                            Name = item.IdproductNavigation!.Name,
-                            Image = item.IdproductNavigation.Image,
-                            Size = item.IdsizeNavigation != null ? item.IdsizeNavigation.Name : "",
-                            Color = item.IdcolorNavigation != null ? item.IdcolorNavigation.Name : "",
-                            Price = item.UnitPrice,
-                            Quantity = item.Quantity
-                        }).ToList()
-            })
-            .FirstOrDefaultAsync();// Phải có hàm này để chốt câu lệnh và lấy về 1 đối tượng
-
-        // 4. Xử lý trường hợp chưa có giỏ hàng (Trả về giỏ hàng rỗng thay vì báo lỗi)
-        if (cart == null)
-        {
-            return new ServiceResponse<ShoppingCartDto>
-            {
-                Status = 200,
-                Message = "Giỏ hàng trống",
-                Data = new ShoppingCartDto
-                {
-                    TotalPrice = 0,
-                    ShoppingCartItems = new List<ShoppingCartItemDto>()
-                }
-            };
-        }
+                            Name = item.IdcomboNavigation!.Name,
+                            Products = item.CartComboProducts.Select(cp => new CartComboProductDto
+                            {
+                                Name = cp.IdproductNavigation.Name,
+                                Size = cp.IdsizeNavigation!.Name,
+                                Color = cp.IdcolorNavigation!.Name,
+                                Image = cp.IdproductNavigation.Image,
+                                Quantity = cp.Quantity
+                            }).ToList(),
+                            Quantity = item.Quantity,
+                            Price = item.IdcomboNavigation.Price * item.Quantity
+                        }
+                ).ToList()
+            }).FirstOrDefaultAsync();
 
         return new ServiceResponse<ShoppingCartDto>
         {
             Status = 200,
             Message = "Lấy giỏ hàng thành công",
-            Data = cart
+            Data = shoppingCart
         };
     }
 
-    public async Task<ServiceResponse> AddToCartAsync(ShoppingCartItemUpdateDto item, string? sub, string? sessionId)
-    {
-        Guid? userId = null;
-        if (!string.IsNullOrEmpty(sub) && Guid.TryParse(sub, out var parsedId))
-        {
-            userId = parsedId;
-        }
-
-        if (userId != null)
-        {
-            var user = await appDbContext.ShoppingCarts.FirstOrDefaultAsync(x => x.Iduser == userId);
-            if (user == null)
-            {
-                return new ServiceResponse<ShoppingCartDto>
-                {
-                    Status = 400,
-                    Message = "Người dùng không tồn tại."
-                };
-            }
-            
-        }
-    }
-
-    public async Task<ServiceResponse> UpdateCartItemAsync(Guid cartItemId, string? userId, string? sessionId,
-        ShoppingCartItemUpdateDto item)
+    public async Task<ServiceResponse> AddToCartAsync(ShoppingCartItemUpdateDto item, string? sub)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResponse> RemoveFromCartAsync(Guid cartItemId, string? userId, string? sessionId)
+    public async Task<ServiceResponse> UpdateCartItemAsync(Guid cartItemId, string? sub, ShoppingCartItemUpdateDto item)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResponse> ClearCartAsync(string? userId, string? sessionId)
+    public async Task<ServiceResponse> RemoveFromCartAsync(Guid cartItemId, string? sub)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResponse> MergeCartAsync(string? userId, string? sessionId)
+    public async Task<ServiceResponse> ClearCartAsync(string? sub)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<ServiceResponse> MergeCartAsync(string? sub)
     {
         throw new NotImplementedException();
     }
