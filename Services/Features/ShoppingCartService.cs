@@ -102,9 +102,27 @@ public class ShoppingCartService(
         };
     }
 
-    public async Task<ServiceResponse> AddToCartAsync(ShoppingCartItemUpdateDto item, string? userId, string? sessionId)
+    public async Task<ServiceResponse> AddToCartAsync(ShoppingCartItemUpdateDto item, string? sub, string? sessionId)
     {
-        throw new NotImplementedException();
+        Guid? userId = null;
+        if (!string.IsNullOrEmpty(sub) && Guid.TryParse(sub, out var parsedId))
+        {
+            userId = parsedId;
+        }
+
+        if (userId != null)
+        {
+            var user = await appDbContext.ShoppingCarts.FirstOrDefaultAsync(x => x.Iduser == userId);
+            if (user == null)
+            {
+                return new ServiceResponse<ShoppingCartDto>
+                {
+                    Status = 400,
+                    Message = "Người dùng không tồn tại."
+                };
+            }
+            
+        }
     }
 
     public async Task<ServiceResponse> UpdateCartItemAsync(Guid cartItemId, string? userId, string? sessionId,
