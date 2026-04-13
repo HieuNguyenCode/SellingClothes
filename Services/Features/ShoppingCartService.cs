@@ -66,7 +66,7 @@ public class ShoppingCartService(
 
     public async Task<ServiceResponse> AddToCartAsync(ShoppingCartItemUpdateDto item, string? sub)
     {
-        throw new NotImplementedException();
+        
     }
 
     public async Task<ServiceResponse> UpdateCartItemAsync(Guid cartItemId, string? sub, ShoppingCartItemUpdateDto item)
