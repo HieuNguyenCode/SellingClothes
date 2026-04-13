@@ -10,7 +10,7 @@ public class ShoppingCartItemUpdateDto
 
     public string? Color { get; set; }
 
-    public int Quantity { get; set; }
+    public int? Quantity { get; set; }
 
     public List<CartComboProductUpdateDto> Products { get; set; }
 }
