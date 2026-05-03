@@ -43,6 +43,7 @@ public class ShoppingCartService(
                         {
                             Id = item.IdshoppingCartItem,
                             Name = item.IdcomboNavigation!.Name,
+                            Image = item.IdcomboNavigation.Image,
                             Products = item.CartComboProducts.Select(cp => new CartComboProductDto
                             {
                                 Name = cp.IdproductNavigation.Name,
@@ -86,7 +87,7 @@ public class ShoppingCartService(
                 await appDbContext.SaveChangesAsync(); // Save to generate the Cart ID
             }
 
-            var quantityToAdd = item.Quantity ?? 1;
+            var quantityToAdd = item.Quantity;
 
             if (item.IsCombo)
             {
@@ -275,9 +276,9 @@ public class ShoppingCartService(
                 return new ServiceResponse { Status = 404, Message = "Không tìm thấy sản phẩm trong giỏ hàng" };
 
             // 2. Tính năng mở rộng: Nếu Update số lượng về <= 0, ta tự động xóa sản phẩm đó
-            if (item.Quantity.HasValue && item.Quantity.Value <= 0)
+            if (item.Quantity <= 0)
             {
-                if (cartItem.CartComboProducts.Any())
+                if (cartItem.CartComboProducts.Count != 0)
                     appDbContext.CartComboProducts.RemoveRange(cartItem.CartComboProducts);
 
                 appDbContext.ShoppingCartItems.Remove(cartItem);
@@ -289,7 +290,7 @@ public class ShoppingCartService(
             }
 
             // 3. Cập nhật số lượng
-            if (item.Quantity.HasValue) cartItem.Quantity = item.Quantity.Value;
+            cartItem.Quantity = item.Quantity;
 
             // 4. Xử lý thay đổi Color/Size cho SẢN PHẨM LẺ
             if (!item.IsCombo && cartItem.Idproduct != null)
@@ -335,7 +336,7 @@ public class ShoppingCartService(
                 }
             }
             // 5. Xử lý thay đổi Color/Size cho COMBO
-            else if (item.IsCombo && cartItem.Idcombo != null && item.Products != null && item.Products.Any())
+            else if (item.IsCombo && cartItem.Idcombo != null && item.Products.Count != 0)
             {
                 // Lấy danh sách ID của tất cả sản phẩm nằm trong combo này
                 var productIdsInCombo = cartItem.CartComboProducts.Select(ccp => ccp.Idproduct).ToList();
@@ -458,7 +459,50 @@ public class ShoppingCartService(
                 Status = 400,
                 Message = "Thông tin người dùng không hợp lệ"
             };
-        throw new NotImplementedException();
+        await using var transaction = await appDbContext.Database.BeginTransactionAsync();
+        try
+        {
+            var cart = await appDbContext.ShoppingCarts.FirstOrDefaultAsync(c => c.Iduser == userId);
+            if (cart == null)
+                return new ServiceResponse<ShoppingCartDto>
+                {
+                    Status = 400,
+                    Message = "Không tìm thấy giỏ hàng của bạn"
+                };
+            var cartItems = await appDbContext.ShoppingCartItems.Where(ci => ci.IdshoppingCart == cart.IdshoppingCart)
+                .ToListAsync();
+            if (cartItems.Count != 0)
+            {
+                var comboCartItems = cartItems.Where(ci => ci.Idcombo != null).ToList();
+                if (comboCartItems.Count != 0)
+                {
+                    var comboCartItemIds = comboCartItems.Select(ci => ci.IdshoppingCartItem).ToList();
+                    var comboProducts = await appDbContext.CartComboProducts
+                        .Where(ccp => comboCartItemIds.Contains(ccp.IdshoppingCartItem)).ToListAsync();
+                    appDbContext.CartComboProducts.RemoveRange(comboProducts);
+                }
+
+                appDbContext.ShoppingCartItems.RemoveRange(cartItems);
+            }
+
+            await appDbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return new ServiceResponse
+            {
+                Status = 200,
+                Message = "Xóa giỏ hàng thành công"
+            };
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            logger.LogError(ex, "Lỗi khi xóa giỏ hàng");
+            return new ServiceResponse
+            {
+                Status = 500,
+                Message = "Đã xảy ra lỗi khi xóa giỏ hàng"
+            };
+        }
     }
 
     public async Task<ServiceResponse> MergeCartAsync(string? sub)
@@ -469,6 +513,57 @@ public class ShoppingCartService(
                 Status = 400,
                 Message = "Thông tin người dùng không hợp lệ"
             };
-        throw new NotImplementedException();
+        await using var transaction = await appDbContext.Database.BeginTransactionAsync();
+        try
+        {
+            var cart = await appDbContext.ShoppingCarts.FirstOrDefaultAsync(c => c.Iduser == userId);
+            if (cart == null)
+                return new ServiceResponse<ShoppingCartDto>
+                {
+                    Status = 400,
+                    Message = "Không tìm thấy giỏ hàng của bạn"
+                };
+            var cartItems = await appDbContext.ShoppingCartItems.Where(ci => ci.IdshoppingCart == cart.IdshoppingCart)
+                .ToListAsync();
+            if (cartItems.Count == 0)
+                return new ServiceResponse<ShoppingCartDto>
+                {
+                    Status = 200,
+                    Message = "Giỏ hàng đã trống, không cần gộp"
+                };
+
+            var comboCartItems = cartItems.Where(ci => ci.Idcombo != null).ToList();
+            if (comboCartItems.Count != 0)
+            {
+                var comboCartItemIds = comboCartItems.Select(ci => ci.IdshoppingCartItem).ToList();
+                var comboProducts = await appDbContext.CartComboProducts
+                    .Where(ccp => comboCartItemIds.Contains(ccp.IdshoppingCartItem)).ToListAsync();
+                appDbContext.CartComboProducts.RemoveRange(comboProducts);
+                appDbContext.ShoppingCartItems.RemoveRange(comboCartItems);
+                await appDbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new ServiceResponse
+                {
+                    Status = 200,
+                    Message = "Gộp giỏ hàng thành công"
+                };
+            }
+
+            return new ServiceResponse
+            {
+                Status = 200,
+                Message = "Không có sản phẩm combo nào trong giỏ hàng, không cần gộp"
+            };
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            return new ServiceResponse
+            {
+                Status = 500,
+                Message = "Đã xảy ra lỗi khi xử lý yêu cầu xóa khỏi giỏ hàng"
+            };
+        }
     }
 }

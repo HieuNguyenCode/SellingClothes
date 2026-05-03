@@ -106,6 +106,8 @@ public class ComboService(
                     Id = cp.IdproductNavigation.Idproduct,
                     Name = cp.IdproductNavigation.Name,
                     Image = cp.IdproductNavigation.Image,
+                    Size = cp.IdproductNavigation.Sizes.Select(size => size.Name).ToList(),
+                    Color = cp.IdproductNavigation.Colors.Select(color => color.Name).ToList(),
                     Quantity = cp.Quantity
                 }).ToList()
             })
