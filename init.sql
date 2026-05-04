@@ -27,21 +27,21 @@ CREATE TABLE IF NOT EXISTS Type
 
 CREATE TABLE IF NOT EXISTS Product
 (
-    IDProduct  CHAR(36)     NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh sản phẩm',
-    Name       VARCHAR(255) NOT NULL COMMENT 'Tên sản phẩm' UNIQUE,
-    Price      INT          NOT NULL COMMENT 'Giá niêm yết của sản phẩm',
-    IDCompany  CHAR(36)     NOT NULL COMMENT 'Khóa ngoại tham chiếu đến công ty/thương hiệu',
-    IDType     CHAR(36)     NOT NULL COMMENT 'Khóa ngoại tham chiếu đến loại sản phẩm',
-    `Describe` TEXT COMMENT 'Mô tả chi tiết về sản phẩm',
-    Image      VARCHAR(255) NOT NULL COMMENT 'Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm',
-    
+    IDProduct   CHAR(36)     NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh sản phẩm',
+    Name        VARCHAR(255) NOT NULL COMMENT 'Tên sản phẩm' UNIQUE,
+    Price       INT          NOT NULL COMMENT 'Giá niêm yết của sản phẩm',
+    IDCompany   CHAR(36)     NOT NULL COMMENT 'Khóa ngoại tham chiếu đến công ty/thương hiệu',
+    IDType      CHAR(36)     NOT NULL COMMENT 'Khóa ngoại tham chiếu đến loại sản phẩm',
+    `Describe`  TEXT COMMENT 'Mô tả chi tiết về sản phẩm',
+    Image       VARCHAR(255) NOT NULL COMMENT 'Đường dẫn lưu trữ file hình ảnh đại diện sản phẩm',
+
     IsPublished BOOLEAN      NOT NULL             DEFAULT FALSE COMMENT 'Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng',
     IsDeleted   BOOLEAN      NOT NULL             DEFAULT FALSE COMMENT 'Cờ đánh dấu sản phẩm đã bị xóa (soft delete)',
-    
-    UpdateBy   CHAR(36) COMMENT 'Người cập nhật cuối cùng',
-    CreateBy   CHAR(36)     NOT NULL COMMENT 'Người tạo bản ghi',
-    UpdateAt   TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật cuối',
-    CreateAt   TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian tạo bản ghi',
+
+    UpdateBy    CHAR(36) COMMENT 'Người cập nhật cuối cùng',
+    CreateBy    CHAR(36)     NOT NULL COMMENT 'Người tạo bản ghi',
+    UpdateAt    TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật cuối',
+    CreateAt    TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian tạo bản ghi',
     CONSTRAINT fk_product_com FOREIGN KEY (IDCompany) REFERENCES Company (IDCompany),
     CONSTRAINT fk_product_type FOREIGN KEY (IDType) REFERENCES Type (IDType),
     CONSTRAINT fk_product_user_update FOREIGN KEY (UpdateBy) REFERENCES users (IDUser),
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS Size
     Name      VARCHAR(255) NOT NULL COMMENT 'Tên kích cỡ (VD: S, M, L, XL)',
 
     CONSTRAINT fk_size_product FOREIGN KEY (IDProduct) REFERENCES Product (IDProduct)
-); 
+);
 
 CREATE TABLE IF NOT EXISTS Color
 (
@@ -81,18 +81,18 @@ CREATE TABLE IF NOT EXISTS Image
 
 CREATE TABLE IF NOT EXISTS Combo
 (
-    IDCombo  CHAR(36)     NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh combo sản phẩm',
-    Name     VARCHAR(255) NOT NULL COMMENT 'Tên gọi của combo',
-    Price    INT          NOT NULL COMMENT 'Giá bán tổng hợp của combo',
-    Image    VARCHAR(255) NOT NULL COMMENT 'Đường dẫn lưu trữ file hình ảnh đại diện combo',
-    
+    IDCombo     CHAR(36)     NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh combo sản phẩm',
+    Name        VARCHAR(255) NOT NULL COMMENT 'Tên gọi của combo',
+    Price       INT          NOT NULL COMMENT 'Giá bán tổng hợp của combo',
+    Image       VARCHAR(255) NOT NULL COMMENT 'Đường dẫn lưu trữ file hình ảnh đại diện combo',
+
     IsPublished BOOLEAN      NOT NULL             DEFAULT FALSE COMMENT 'Cờ đánh dấu sản phẩm đã được xuất bản và hiển thị trên cửa hàng',
     IsDeleted   BOOLEAN      NOT NULL             DEFAULT FALSE COMMENT 'Cờ đánh dấu sản phẩm đã bị xóa (soft delete)',
 
-    UpdateBy CHAR(36) COMMENT 'Người cập nhật cuối cùng',
-    CreateBy CHAR(36)     NOT NULL COMMENT 'Người tạo combo',
-    UpdateAt TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật cuối',
-    CreateAt TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian tạo combo',
+    UpdateBy    CHAR(36) COMMENT 'Người cập nhật cuối cùng',
+    CreateBy    CHAR(36)     NOT NULL COMMENT 'Người tạo combo',
+    UpdateAt    TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật cuối',
+    CreateAt    TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian tạo combo',
     CONSTRAINT fk_combo_user_update FOREIGN KEY (UpdateBy) REFERENCES users (IDUser),
     CONSTRAINT fk_combo_user_create FOREIGN KEY (CreateBy) REFERENCES users (IDUser)
 );
@@ -161,14 +161,14 @@ CREATE TABLE IF NOT EXISTS SaleCombo
 
 CREATE TABLE IF NOT EXISTS ShoppingCart
 (
-    IDShoppingCart CHAR(36)     NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh giỏ hàng',
-    IDUser         CHAR(36)     NULL COMMENT 'Khóa ngoại định danh người dùng (NULL nếu chưa đăng nhập)',
-    TotalPrice     INT          NOT NULL             DEFAULT 0 COMMENT 'Tổng giá trị hiện tại của giỏ hàng',
+    IDShoppingCart CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã định danh giỏ hàng',
+    IDUser         CHAR(36) NULL COMMENT 'Khóa ngoại định danh người dùng (NULL nếu chưa đăng nhập)',
+    TotalPrice     INT      NOT NULL             DEFAULT 0 COMMENT 'Tổng giá trị hiện tại của giỏ hàng',
 
-    UpdateBy       CHAR(36)     NULL COMMENT 'Người cập nhật cuối cùng',
-    CreateBy       CHAR(36)     NULL COMMENT 'Người tạo giỏ hàng',
-    UpdateAt       TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật giỏ hàng cuối cùng',
-    CreateAt       TIMESTAMP                         DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian khởi tạo giỏ hàng',
+    UpdateBy       CHAR(36) NULL COMMENT 'Người cập nhật cuối cùng',
+    CreateBy       CHAR(36) NULL COMMENT 'Người tạo giỏ hàng',
+    UpdateAt       TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật giỏ hàng cuối cùng',
+    CreateAt       TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian khởi tạo giỏ hàng',
 
     CONSTRAINT fk_cart_user FOREIGN KEY (IDUser) REFERENCES users (IDUser),
     CONSTRAINT fk_cart_user_update FOREIGN KEY (UpdateBy) REFERENCES users (IDUser),
@@ -209,14 +209,14 @@ CREATE TABLE IF NOT EXISTS CartComboProduct
 (
     IDCartComboProduct CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã chi tiết liên kết Combo và Product trong giỏ hàng',
     IDShoppingCartItem CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu đến món hàng trong giỏ (dòng sản phẩm hoặc combo)',
-    IDProduct         CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu đến sản phẩm nằm trong combo của món hàng này',
-    Quantity          INT      NOT NULL COMMENT 'Số lượng sản phẩm này trong combo của món hàng',
+    IDProduct          CHAR(36) NOT NULL COMMENT 'Khóa ngoại tham chiếu đến sản phẩm nằm trong combo của món hàng này',
+    Quantity           INT      NOT NULL COMMENT 'Số lượng sản phẩm này trong combo của món hàng',
     IDColor            CHAR(36) NULL COMMENT 'Màu sắc cụ thể của sản phẩm khách đã chọn',
     IDSize             CHAR(36) NULL COMMENT 'Kích cỡ cụ thể của sản',
-    UpdateBy          CHAR(36) COMMENT 'Người cập nhật liên kết',
-    CreateBy          CHAR(36) NOT NULL COMMENT 'Người tạo liên kết',
-    UpdateAt          TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật cuối',
-    CreateAt          TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian tạo bản ghi',
+    UpdateBy           CHAR(36) COMMENT 'Người cập nhật liên kết',
+    CreateBy           CHAR(36) NOT NULL COMMENT 'Người tạo liên kết',
+    UpdateAt           TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật cuối',
+    CreateAt           TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian tạo bản ghi',
     CONSTRAINT fk_ccp_cart_item FOREIGN KEY (IDShoppingCartItem) REFERENCES ShoppingCartItem (IDShoppingCartItem),
     CONSTRAINT fk_ccp_product FOREIGN KEY (IDProduct) REFERENCES Product (IDProduct),
     CONSTRAINT fk_ccp_user_update FOREIGN KEY (UpdateBy) REFERENCES users (IDUser),
@@ -283,5 +283,20 @@ CREATE TABLE IF NOT EXISTS OrderDetail
         )
 );
 
-INSERT INTO users (UserName, Password, Role) VALUES 
-('admin', '$2a$11$/5EILZrELlTN5FTThpcm/uM1LaVjkfCRwjeBJOxBBBtIJFOVJNRWi', 'admin');
+CREATE TABLE OrderDetailProduct
+(
+    IDOrderDetailProduct CHAR(36) NOT NULL PRIMARY KEY DEFAULT (UUID()) COMMENT 'Mã chi thiết sản phẩm combo order',
+    IDOrderDetail        CHAR(36) NOT NULL COMMENT 'Khóa ngoại thuộc combo order nào',
+    IDProduct            CHAR(36) NULL COMMENT 'Sản phẩm đã mua',
+    IDColor              CHAR(36) NULL COMMENT 'Màu sắc cụ thể của sản phẩm khách đã chọn',
+    IDSize               CHAR(36) NULL COMMENT 'Kích cỡ cụ thể của sản phẩm khách đã chọn (nếu có)',
+
+    Quantity             INT      NOT NULL             DEFAULT 1 COMMENT 'Số lượng mua',
+
+    UpdateBy             CHAR(36) NULL COMMENT 'Người cập nhật chi tiết',
+    CreateBy             CHAR(36) NULL COMMENT 'Người tạo chi tiết',
+    UpdateAt             TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Thời gian cập nhật bản ghi',
+    CreateAt             TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP COMMENT 'Thời gian tạo bản ghi'
+);
+INSERT INTO users (UserName, Password, Role)
+VALUES ('admin', '$2a$11$/5EILZrELlTN5FTThpcm/uM1LaVjkfCRwjeBJOxBBBtIJFOVJNRWi', 'admin');

@@ -31,6 +31,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<OrderDetail> OrderDetails { get; set; }
 
+    public virtual DbSet<OrderDetailProduct> OrderDetailProducts { get; set; }
+
     public virtual DbSet<Product> Products { get; set; }
 
     public virtual DbSet<Sale> Sales { get; set; }
@@ -470,6 +472,44 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.UpdateByNavigation).WithMany(p => p.OrderDetailUpdateByNavigations)
                 .HasForeignKey(d => d.UpdateBy)
                 .HasConstraintName("fk_od_user_update");
+        });
+
+        modelBuilder.Entity<OrderDetailProduct>(entity =>
+        {
+            entity.HasKey(e => e.IdorderDetailProduct).HasName("PRIMARY");
+
+            entity.ToTable("OrderDetailProduct");
+
+            entity.Property(e => e.IdorderDetailProduct)
+                .HasComment("Mã chi thiết sản phẩm combo order")
+                .HasColumnName("IDOrderDetailProduct");
+            entity.Property(e => e.CreateAt)
+                .HasDefaultValueSql("current_timestamp()")
+                .HasComment("Thời gian tạo bản ghi")
+                .HasColumnType("timestamp");
+            entity.Property(e => e.CreateBy).HasComment("Người tạo chi tiết");
+            entity.Property(e => e.Idcolor)
+                .HasComment("Màu sắc cụ thể của sản phẩm khách đã chọn")
+                .HasColumnName("IDColor");
+            entity.Property(e => e.IdorderDetail)
+                .HasComment("Khóa ngoại thuộc combo order nào")
+                .HasColumnName("IDOrderDetail");
+            entity.Property(e => e.Idproduct)
+                .HasComment("Sản phẩm đã mua")
+                .HasColumnName("IDProduct");
+            entity.Property(e => e.Idsize)
+                .HasComment("Kích cỡ cụ thể của sản phẩm khách đã chọn (nếu có)")
+                .HasColumnName("IDSize");
+            entity.Property(e => e.Quantity)
+                .HasDefaultValueSql("'1'")
+                .HasComment("Số lượng mua")
+                .HasColumnType("int(11)");
+            entity.Property(e => e.UpdateAt)
+                .ValueGeneratedOnAddOrUpdate()
+                .HasDefaultValueSql("current_timestamp()")
+                .HasComment("Thời gian cập nhật bản ghi")
+                .HasColumnType("timestamp");
+            entity.Property(e => e.UpdateBy).HasComment("Người cập nhật chi tiết");
         });
 
         modelBuilder.Entity<Product>(entity =>
