@@ -371,38 +371,40 @@ public class ProductService(
                 }
             }
 
-            if (product.Colors.Count != 0)
+            // Cập nhật màu sắc
+            var colorsToRemove = product.Colors.Where(c => !dto.Colors.Contains(c.Name)).ToList();
+            var colorsToAdd = dto.Colors.Where(name => !product.Colors.Any(c => c.Name == name)).ToList();
+
+            if (colorsToRemove.Count != 0)
             {
-                appDbContext.Colors.RemoveRange(product.Colors);
+                appDbContext.Colors.RemoveRange(colorsToRemove);
             }
 
-            if (dto.Colors.Count != 0)
+            if (colorsToAdd.Count != 0)
             {
-                var productColors = (from color in dto.Colors
-                    where !string.IsNullOrEmpty(color)
-                    select new Color { Idproduct = id, Name = color }).ToList();
+                var productColors = colorsToAdd
+                    .Where(name => !string.IsNullOrEmpty(name))
+                    .Select(name => new Color { Idproduct = id, Name = name }).ToList();
 
-                if (productColors.Count != 0)
-                {
-                    await appDbContext.Colors.AddRangeAsync(productColors);
-                }
+                await appDbContext.Colors.AddRangeAsync(productColors);
             }
 
-            if (product.Sizes.Count != 0)
+            // Cập nhật kích thước
+            var sizesToRemove = product.Sizes.Where(s => !dto.Sizes.Contains(s.Name)).ToList();
+            var sizesToAdd = dto.Sizes.Where(name => !product.Sizes.Any(s => s.Name == name)).ToList();
+
+            if (sizesToRemove.Count != 0)
             {
-                appDbContext.Sizes.RemoveRange(product.Sizes);
+                appDbContext.Sizes.RemoveRange(sizesToRemove);
             }
 
-            if (dto.Sizes.Count != 0)
+            if (sizesToAdd.Count != 0)
             {
-                var productSizes = (from size in dto.Sizes
-                    where !string.IsNullOrEmpty(size)
-                    select new Size { Idproduct = id, Name = size }).ToList();
+                var productSizes = sizesToAdd
+                    .Where(name => !string.IsNullOrEmpty(name))
+                    .Select(name => new Size { Idproduct = id, Name = name }).ToList();
 
-                if (productSizes.Count != 0)
-                {
-                    await appDbContext.Sizes.AddRangeAsync(productSizes);
-                }
+                await appDbContext.Sizes.AddRangeAsync(productSizes);
             }
 
             await appDbContext.SaveChangesAsync();
