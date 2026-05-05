@@ -472,6 +472,11 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.UpdateByNavigation).WithMany(p => p.OrderDetailUpdateByNavigations)
                 .HasForeignKey(d => d.UpdateBy)
                 .HasConstraintName("fk_od_user_update");
+
+            entity.HasMany(d => d.OrderDetailProducts)
+                .WithOne(p => p.IdorderDetailNavigation)
+                .HasForeignKey(p => p.IdorderDetail)
+                .HasConstraintName("fk_odp_order_detail");
         });
 
         modelBuilder.Entity<OrderDetailProduct>(entity =>
@@ -510,6 +515,23 @@ public partial class AppDbContext : DbContext
                 .HasComment("Thời gian cập nhật bản ghi")
                 .HasColumnType("timestamp");
             entity.Property(e => e.UpdateBy).HasComment("Người cập nhật chi tiết");
+
+            entity.HasOne(d => d.IdorderDetailNavigation).WithMany(p => p.OrderDetailProducts)
+                .HasForeignKey(d => d.IdorderDetail)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_odp_order_detail");
+
+            entity.HasOne(d => d.IdproductNavigation).WithMany()
+                .HasForeignKey(d => d.Idproduct)
+                .HasConstraintName("fk_odp_product");
+
+            entity.HasOne(d => d.IdcolorNavigation).WithMany()
+                .HasForeignKey(d => d.Idcolor)
+                .HasConstraintName("fk_odp_color");
+
+            entity.HasOne(d => d.IdsizeNavigation).WithMany()
+                .HasForeignKey(d => d.Idsize)
+                .HasConstraintName("fk_odp_size");
         });
 
         modelBuilder.Entity<Product>(entity =>

@@ -80,4 +80,6 @@ public class OrderDetail
     public virtual Size? IdsizeNavigation { get; set; }
 
     public virtual User? UpdateByNavigation { get; set; }
+
+    public virtual ICollection<OrderDetailProduct> OrderDetailProducts { get; set; } = new List<OrderDetailProduct>();
 }

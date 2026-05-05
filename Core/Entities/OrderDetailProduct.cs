@@ -51,4 +51,9 @@ public class OrderDetailProduct
     ///     Thời gian tạo bản ghi
     /// </summary>
     public DateTime? CreateAt { get; set; }
+
+    public virtual OrderDetail IdorderDetailNavigation { get; set; } = null!;
+    public virtual Product? IdproductNavigation { get; set; }
+    public virtual Color? IdcolorNavigation { get; set; }
+    public virtual Size? IdsizeNavigation { get; set; }
 }

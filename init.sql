@@ -229,7 +229,7 @@ CREATE TABLE IF NOT EXISTS Orders
 (
     IDOrder         CHAR(36)     NOT NULL PRIMARY KEY                                   DEFAULT (UUID()) COMMENT 'Mã định danh hóa đơn/đơn hàng',
     IDUser          CHAR(36)     NULL COMMENT 'Tài khoản người đặt mua (NULL nếu mua không cần tài khoản)',
-    SessionID       VARCHAR(255) NULL COMMENT 'Mã phiên làm việc nếu khách vãng lai đặt hàng',
+        SessionID       VARCHAR(255) NULL COMMENT 'Mã phiên làm việc nếu khách vãng lai đặt hàng',
 
     CustomerName    VARCHAR(255) NOT NULL COMMENT 'Họ tên người nhận hàng',
     PhoneNumber     VARCHAR(20)  NOT NULL COMMENT 'Số điện thoại liên hệ nhận hàng',

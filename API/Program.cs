@@ -64,7 +64,7 @@ builder.Services.AddAuthentication(options =>
         {
             OnChallenge = async context => // Thêm từ khóa 'async'
             {
-                context.HandleResponse();// Ngăn mặc định
+                context.HandleResponse(); // Ngăn mặc định
 
                 context.Response.StatusCode = 401;
                 context.Response.ContentType = "application/json";
@@ -104,6 +104,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IComboService, ComboService>();
 builder.Services.AddScoped<ISaleService, SaleService>();
 builder.Services.AddScoped<IShoppingCartService, ShoppingCartService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
@@ -124,10 +125,7 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 var wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-if (!Directory.Exists(wwwrootPath))
-{
-    Directory.CreateDirectory(wwwrootPath);
-}
+if (!Directory.Exists(wwwrootPath)) Directory.CreateDirectory(wwwrootPath);
 
 app.UseStaticFiles(new StaticFileOptions
 {
