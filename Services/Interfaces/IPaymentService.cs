@@ -14,4 +14,6 @@ public interface IPaymentService
         int page = 1, int pageSize = 10);
 
     Task<ServiceResponse> UpdateOrderStatusAsync(Guid orderId, OrderStatusUpdateDto updateDto, string? updateBy);
+
+    Task<ServiceResponse<DashboardDto>> GetDashboardStatsAsync();
 }

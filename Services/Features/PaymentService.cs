@@ -357,6 +357,147 @@ public class PaymentService(
         }
     }
 
+    public async Task<ServiceResponse<DashboardDto>> GetDashboardStatsAsync()
+    {
+        try
+        {
+            var now = DateTime.Now;
+            var currentMonth = new DateTime(now.Year, now.Month, 1);
+            var lastMonth = currentMonth.AddMonths(-1);
+
+            // 1. Doanh thu tổng
+            var totalRevenue = await appDbContext.Orders
+                .Where(o => o.OrderStatus != "Cancelled")
+                .SumAsync(o => o.TotalPrice);
+
+            // 2. Đơn hàng mới (trong tháng này)
+            var newOrdersCount = await appDbContext.Orders
+                .CountAsync(o => o.CreateAt >= currentMonth);
+
+            // 3. Tổng số khách hàng (User có role customer)
+            var totalCustomers = await appDbContext.Users
+                .CountAsync(u => u.Role == "customer");
+
+            // 4. Tăng trưởng doanh thu (%)
+            var currentMonthRevenue = await appDbContext.Orders
+                .Where(o => o.OrderStatus != "Cancelled" && o.CreateAt >= currentMonth)
+                .SumAsync(o => o.TotalPrice);
+
+            var lastMonthRevenue = await appDbContext.Orders
+                .Where(o => o.OrderStatus != "Cancelled" && o.CreateAt >= lastMonth && o.CreateAt < currentMonth)
+                .SumAsync(o => o.TotalPrice);
+
+            double revenueGrowth = 0;
+            if (lastMonthRevenue > 0)
+            {
+                revenueGrowth = (double)(currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100;
+            }
+            else if (currentMonthRevenue > 0)
+            {
+                revenueGrowth = 100;
+            }
+
+            // 5. Sản phẩm nổi bật (Xếp hạng chung Product và Combo)
+            var topProducts = await appDbContext.OrderDetails
+                .Where(od => od.IdorderNavigation.OrderStatus != "Cancelled" && od.Idproduct != null)
+                .GroupBy(od => new { od.Idproduct, od.IdproductNavigation!.Name, od.IdproductNavigation.Image })
+                .Select(g => new TopSellingItemDto
+                {
+                    Id = g.Key.Idproduct!.Value,
+                    Name = g.Key.Name,
+                    Type = "Product",
+                    TotalSold = g.Sum(x => x.Quantity),
+                    Revenue = g.Sum(x => x.Quantity * x.UnitPrice),
+                    Image = g.Key.Image
+                })
+                .ToListAsync();
+
+            var topCombos = await appDbContext.OrderDetails
+                .Where(od => od.IdorderNavigation.OrderStatus != "Cancelled" && od.Idcombo != null)
+                .GroupBy(od => new { od.Idcombo, od.IdcomboNavigation!.Name, od.IdcomboNavigation.Image })
+                .Select(g => new TopSellingItemDto
+                {
+                    Id = g.Key.Idcombo!.Value,
+                    Name = g.Key.Name,
+                    Type = "Combo",
+                    TotalSold = g.Sum(x => x.Quantity),
+                    Revenue = g.Sum(x => x.Quantity * x.UnitPrice),
+                    Image = g.Key.Image
+                })
+                .ToListAsync();
+
+            var topSellingItems = topProducts.Concat(topCombos)
+                .OrderByDescending(x => x.TotalSold)
+                .Take(5)
+                .ToList();
+
+            // 6. Đơn hàng gần đây
+            var recentOrders = await appDbContext.Orders
+                .AsNoTracking()
+                .OrderByDescending(o => o.CreateAt)
+                .Take(10)
+                .Select(o => new OrderAdminResponseDto
+                {
+                    Idorder = o.Idorder,
+                    Iduser = o.Iduser,
+                    CustomerName = o.CustomerName,
+                    PhoneNumber = o.PhoneNumber,
+                    ShippingAddress = o.ShippingAddress,
+                    TotalPrice = o.TotalPrice,
+                    OrderStatus = o.OrderStatus ?? "Pending",
+                    PaymentMethod = o.PaymentMethod ?? "COD",
+                    PaymentStatus = o.PaymentStatus ?? "Unpaid",
+                    CreateAt = o.CreateAt ?? DateTime.MinValue,
+                    Items = o.OrderDetails.Select(od => new OrderDetailAdminDto
+                    {
+                        ItemName = od.Idproduct != null
+                            ? (od.IdproductNavigation != null ? od.IdproductNavigation.Name : "N/A")
+                            : (od.IdcomboNavigation != null ? od.IdcomboNavigation.Name : "N/A"),
+                        ItemType = od.Idproduct != null ? "Product" : "Combo",
+                        SizeName = od.IdsizeNavigation != null ? od.IdsizeNavigation.Name : null,
+                        ColorName = od.IdcolorNavigation != null ? od.IdcolorNavigation.Name : null,
+                        Quantity = od.Quantity,
+                        UnitPrice = od.UnitPrice,
+                        SubTotal = od.SubTotal ?? (od.Quantity * od.UnitPrice),
+                        ComboItems = od.Idcombo != null
+                            ? od.OrderDetailProducts.Select(odp => new OrderDetailComboItemDto
+                            {
+                                ProductName = odp.IdproductNavigation != null ? odp.IdproductNavigation.Name : "N/A",
+                                SizeName = odp.IdsizeNavigation != null ? odp.IdsizeNavigation.Name : null,
+                                ColorName = odp.IdcolorNavigation != null ? odp.IdcolorNavigation.Name : null,
+                                Quantity = odp.Quantity
+                            }).ToList()
+                            : null
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return new ServiceResponse<DashboardDto>
+            {
+                Status = 200,
+                Message = "Lấy dữ liệu thống kê thành công.",
+                Data = new DashboardDto
+                {
+                    TotalRevenue = totalRevenue,
+                    NewOrdersCount = newOrdersCount,
+                    TotalCustomers = totalCustomers,
+                    RevenueGrowth = Math.Round(revenueGrowth, 2),
+                    TopSellingItems = topSellingItems,
+                    RecentOrders = recentOrders
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Lỗi khi lấy dữ liệu thống kê dashboard.");
+            return new ServiceResponse<DashboardDto>
+            {
+                Status = 500,
+                Message = "Đã xảy ra lỗi khi lấy dữ liệu thống kê."
+            };
+        }
+    }
+
     public async Task<ServiceResponse> UpdateOrderStatusAsync(Guid orderId, OrderStatusUpdateDto updateDto,
         string? updateBy)
     {

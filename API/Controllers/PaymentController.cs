@@ -34,6 +34,13 @@ public class PaymentController(IPaymentService paymentService) : BaseController
     }
 
     [Authorize(Roles = "admin")]
+    [HttpGet("admin/dashboard")]
+    public async Task<IActionResult> GetDashboard()
+    {
+        return Result(await paymentService.GetDashboardStatsAsync());
+    }
+
+    [Authorize(Roles = "admin")]
     [HttpPatch("admin/orders/{orderId:guid}/status")]
     public async Task<IActionResult> UpdateOrderStatus(Guid orderId, [FromBody] OrderStatusUpdateDto updateDto)
     {
