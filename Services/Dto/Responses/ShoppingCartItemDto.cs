@@ -17,4 +17,6 @@ public class ShoppingCartItemDto
     public int Quantity { get; set; }
 
     public int Price { get; set; }
+
+    public int? PriceSale { get; set; }
 }

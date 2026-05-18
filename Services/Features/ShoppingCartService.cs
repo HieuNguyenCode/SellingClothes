@@ -22,11 +22,13 @@ public class ShoppingCartService(
                 Message = "Thông tin người dùng không hợp lệ"
             };
 
+        var now = DateTime.Now;
+
         var shoppingCart = await appDbContext.ShoppingCarts
             .Where(cart => cart.Iduser == userId)
             .Select(cart => new ShoppingCartDto
             {
-                TotalPrice = cart.TotalPrice,
+                TotalPrice = 0,
                 ShoppingCartItems = cart.ShoppingCartItems.Select(item =>
                     item.Idproduct != null
                         ? new ShoppingCartItemDto
@@ -37,7 +39,11 @@ public class ShoppingCartService(
                             Color = item.IdcolorNavigation!.Name,
                             Image = item.IdproductNavigation.Image,
                             Quantity = item.Quantity,
-                            Price = item.IdproductNavigation.Price * item.Quantity
+                            Price = item.IdproductNavigation.Price * item.Quantity,
+                            PriceSale = item.IdproductNavigation.SaleProducts
+                                .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
+                                .Select(s => (int?)s.Price)
+                                .Min() * item.Quantity
                         }
                         : new ShoppingCartItemDto
                         {
@@ -53,10 +59,19 @@ public class ShoppingCartService(
                                 Quantity = cp.Quantity
                             }).ToList(),
                             Quantity = item.Quantity,
-                            Price = item.IdcomboNavigation.Price * item.Quantity
+                            Price = item.IdcomboNavigation.Price * item.Quantity,
+                            PriceSale = item.IdcomboNavigation.SaleCombos
+                                .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
+                                .Select(s => (int?)s.Price)
+                                .Min() * item.Quantity
                         }
                 ).ToList()
             }).FirstOrDefaultAsync();
+
+        if (shoppingCart != null)
+        {
+            shoppingCart.TotalPrice = shoppingCart.ShoppingCartItems.Sum(item => item.PriceSale ?? item.Price);
+        }
 
         return new ServiceResponse<ShoppingCartDto>
         {
