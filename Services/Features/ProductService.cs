@@ -40,9 +40,16 @@ public class ProductService(
         else if (sortBy.Equals("Price", StringComparison.OrdinalIgnoreCase))
         {
             // Định nghĩa biểu thức tính giá sale nhỏ nhất để EF Core dịch trực tiếp sang SQL MIN()
+            // Sắp xếp theo giá thực tế: Ưu tiên giá sale nhỏ nhất hiện có, nếu không có thì dùng giá gốc
             query = isAsc 
-                ? query.OrderBy(c => c.SaleProducts.Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now)).Select(s => (int?)s.Price).Min()) 
-                : query.OrderByDescending(c => c.SaleProducts.Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now)).Select(s => (int?)s.Price).Min());
+                ? query.OrderBy(c => c.SaleProducts
+                    .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
+                    .Select(s => (int?)s.Price)
+                    .Min() ?? c.Price) 
+                : query.OrderByDescending(c => c.SaleProducts
+                    .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
+                    .Select(s => (int?)s.Price)
+                    .Min() ?? c.Price);
         }
         else if (sortBy.Equals("UpdateAt", StringComparison.OrdinalIgnoreCase))
         {
@@ -105,7 +112,7 @@ public class ProductService(
 
     public async Task<ServiceResponse<ProductDto>> GetProductByIdAsync(Guid id)
     {
-        var now = DateTime.Now;
+        var now = DateTime.UtcNow;
 
         var product = await appDbContext.Products
             .AsNoTracking()
