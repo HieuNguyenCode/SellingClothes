@@ -17,10 +17,13 @@ public class ProductService(
     public async Task<ServiceResponse<List<ProductsDto>>> GetProductsAsync(string? role, string? search, int? page,
         int? pageSize, string? sortBy, bool? sortAsc)
     {
-        var now = DateTime.Now;
+        // Đảm bảo thời gian đồng bộ theo chuẩn hệ thống của bạn (Khuyên dùng UtcNow)
+        var now = DateTime.UtcNow; 
+        
         var query = appDbContext.Products.AsNoTracking().AsQueryable()
             .Where(p => !p.IsDeleted && (role == "admin" || p.IsPublished));
 
+        // 1. Bộ lọc tìm kiếm (Search Filter)
         if (!string.IsNullOrWhiteSpace(search))
         {
             query = query.Where(c => c.Name.Contains(search) ||
@@ -28,65 +31,75 @@ public class ProductService(
                                      c.IdcompanyNavigation.Name.Contains(search));
         }
 
-        List<ProductsDto> products;
+        // 2. Xử lý Sắp xếp (Sorting) đúng thứ tự TRƯỚC KHI phân trang hoặc map dữ liệu
+        bool isAsc = sortAsc ?? true;
+        if (string.IsNullOrWhiteSpace(sortBy) || sortBy.Equals("Name", StringComparison.OrdinalIgnoreCase))
+        {
+            query = isAsc ? query.OrderBy(c => c.Name) : query.OrderByDescending(c => c.Name);
+        }
+        else if (sortBy.Equals("Price", StringComparison.OrdinalIgnoreCase))
+        {
+            // Định nghĩa biểu thức tính giá sale nhỏ nhất để EF Core dịch trực tiếp sang SQL MIN()
+            query = isAsc 
+                ? query.OrderBy(c => c.SaleProducts.Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now)).Select(s => (int?)s.Price).Min()) 
+                : query.OrderByDescending(c => c.SaleProducts.Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now)).Select(s => (int?)s.Price).Min());
+        }
+        else if (sortBy.Equals("UpdateAt", StringComparison.OrdinalIgnoreCase))
+        {
+            query = isAsc ? query.OrderBy(c => c.UpdateAt) : query.OrderByDescending(c => c.UpdateAt);
+        }
+
+        // 3. Chuẩn bị cấu trúc Projection (Mapping sang DTO)
+        var dtoQuery = query.Select(c => new ProductsDto
+        {
+            Id = c.Idproduct,
+            Name = c.Name,
+            Price = c.Price,
+            PriceSale = c.SaleProducts
+                .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
+                .Select(s => (int?)s.Price)
+                .Min(),
+            Image = c.Image,
+            IsPublished = c.IsPublished,
+            UpdateAt = c.UpdateAt ?? now
+        });
+
+        // 4. Kiểm tra điều kiện và thực hiện Phân trang (Pagination)
         if (page.HasValue && pageSize.HasValue)
         {
             var validPage = page.Value > 0 ? page.Value : 1;
             var validPageSize = pageSize.Value > 0 ? pageSize.Value : 10;
 
-            var totalCount = await query.CountAsync();
+            // CountAsync chạy trên `query` gốc (chưa phân trang, chưa select nặng) để tối ưu tốc độ
+            var totalCount = await query.CountAsync(); 
 
-            products = await query
+            var productsWithPage = await dtoQuery
                 .Skip((validPage - 1) * validPageSize)
                 .Take(validPageSize)
-                .Select(c => new ProductsDto
-                {
-                    Id = c.Idproduct,
-                    Name = c.Name,
-                    Price = c.Price,
-                    PriceSale = c.SaleProducts
-                        .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
-                        .Select(s => (int?)s.Price)
-                        .Min(),
-                    Image = c.Image,
-                    IsPublished = c.IsPublished
-                })
-                .OrderBy(c => string.IsNullOrWhiteSpace(sortBy) || sortBy == "Name"  ? c.Name : 
-                                  sortBy == "Price" ? c.PriceSale : c.CreateDate, sortAsc ?? true)
                 .ToListAsync();
+
+            var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling((double)totalCount / validPageSize);
 
             return new ServiceResponse<List<ProductsDto>>
             {
                 Status = 200,
                 Message = "Lấy danh sách sản phẩm thành công.",
-                Data = products,
+                Data = productsWithPage,
                 PageSize = validPageSize,
                 PageNumber = validPage,
                 TotalCount = totalCount,
-                TotalPages = (int)Math.Ceiling((double)totalCount / validPageSize)
+                TotalPages = totalPages
             };
         }
 
-        products = await query
-            .Select(c => new ProductsDto
-            {
-                Id = c.Idproduct,
-                Name = c.Name,
-                Price = c.Price,
-                PriceSale = c.SaleProducts
-                    .Where(s => s.StartDate <= now && (s.EndDate == null || s.EndDate >= now))
-                    .Select(s => (int?)s.Price)
-                    .Min(),
-                Image = c.Image,
-                IsPublished = c.IsPublished
-            })
-            .ToListAsync();
+        // 5. Nhánh trả về toàn bộ dữ liệu (Vẫn được áp dụng bộ lọc và sắp xếp chuẩn)
+        var allProducts = await dtoQuery.ToListAsync();
 
         return new ServiceResponse<List<ProductsDto>>
         {
             Status = 200,
             Message = "Lấy danh sách sản phẩm thành công.",
-            Data = products
+            Data = allProducts
         };
     }
 

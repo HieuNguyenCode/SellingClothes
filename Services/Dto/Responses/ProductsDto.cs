@@ -12,4 +12,5 @@ public class ProductsDto
 
     public string Image { get; set; } = null!;
     public bool IsPublished { get; set; }
+    public DateTime UpdateAt { get; set; }
 }
