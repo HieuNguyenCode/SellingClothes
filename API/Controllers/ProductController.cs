@@ -13,10 +13,10 @@ public class ProductController(IProductService productService) : BaseController
 {
     [HttpGet]
     public async Task<IActionResult> GetProducts([FromQuery] string? search, [FromQuery] int? page,
-        [FromQuery] int? pageSize)
+        [FromQuery] int? pageSize, [FromQuery] string? sortBy, [FromQuery] bool? sortAsc)
     {
         return Result(await productService.GetProductsAsync(User.FindFirstValue(ClaimTypes.Role), search,
-            page, pageSize));
+            page, pageSize, sortBy, sortAsc));
     }
 
     [HttpGet("{id:guid}")]

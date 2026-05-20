@@ -15,7 +15,7 @@ public class ProductService(
 ) : IProductService
 {
     public async Task<ServiceResponse<List<ProductsDto>>> GetProductsAsync(string? role, string? search, int? page,
-        int? pageSize)
+        int? pageSize, string? sortBy, bool? sortAsc)
     {
         var now = DateTime.Now;
         var query = appDbContext.Products.AsNoTracking().AsQueryable()
@@ -28,7 +28,6 @@ public class ProductService(
                                      c.IdcompanyNavigation.Name.Contains(search));
         }
 
-        query = query.OrderBy(c => c.Name);
         List<ProductsDto> products;
         if (page.HasValue && pageSize.HasValue)
         {
@@ -52,6 +51,8 @@ public class ProductService(
                     Image = c.Image,
                     IsPublished = c.IsPublished
                 })
+                .OrderBy(c => string.IsNullOrWhiteSpace(sortBy) || sortBy == "Name"  ? c.Name : 
+                                  sortBy == "Price" ? c.PriceSale : c.CreateDate, sortAsc ?? true)
                 .ToListAsync();
 
             return new ServiceResponse<List<ProductsDto>>
