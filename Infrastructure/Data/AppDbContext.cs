@@ -159,6 +159,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<Combo>(entity =>
         {
+            entity.HasQueryFilter(c => !c.IsDeleted);
             entity.HasKey(e => e.Idcombo).HasName("PRIMARY");
 
             entity.ToTable("Combo");
@@ -536,6 +537,7 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<Product>(entity =>
         {
+            entity.HasQueryFilter(p => !p.IsDeleted);
             entity.HasKey(e => e.Idproduct).HasName("PRIMARY");
 
             entity.ToTable("Product");

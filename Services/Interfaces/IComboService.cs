@@ -9,6 +9,6 @@ public interface IComboService
     Task<ServiceResponse<ComboDto>> GetComboByIdAsync(Guid id);
     Task<ServiceResponse> AddComboAsync(ComboUpdateDto combo, string? sub);
     Task<ServiceResponse> UpdateComboAsync(Guid id, ComboUpdateDto combo, string? sub);
-    Task<ServiceResponse> DeleteComboAsync(Guid id);
-    Task<ServiceResponse> PublishCombotAsync(Guid id, string? sub);
+    Task<ServiceResponse> DeleteComboAsync(Guid id, string? sub);
+    Task<ServiceResponse> PublishComboAsync(Guid id, string? sub);
 }

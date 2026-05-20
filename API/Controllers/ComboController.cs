@@ -42,13 +42,13 @@ public class ComboController(IComboService comboService) : BaseController
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCombo(Guid id)
     {
-        return Result(await comboService.DeleteComboAsync(id));
+        return Result(await comboService.DeleteComboAsync(id, User.FindFirstValue(ClaimTypes.NameIdentifier)));
     }
 
     [Authorize(Roles = "admin")]
     [HttpPatch("{id:guid}/Publish")]
     public async Task<IActionResult> PublishCombo(Guid id)
     {
-        return Result(await comboService.PublishCombotAsync(id, User.FindFirstValue(ClaimTypes.NameIdentifier)));
+        return Result(await comboService.PublishComboAsync(id, User.FindFirstValue(ClaimTypes.NameIdentifier)));
     }
 }

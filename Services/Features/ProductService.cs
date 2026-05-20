@@ -445,6 +445,7 @@ public class ProductService(
         }
 
         var product = await appDbContext.Products
+            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(p => p.Idproduct == id);
 
         if (product == null)
@@ -476,7 +477,7 @@ public class ProductService(
         }
 
         var product = await appDbContext.Products
-            .Include(p => p.ComboProducts)
+            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(p => p.Idproduct == id);
 
         if (product == null)

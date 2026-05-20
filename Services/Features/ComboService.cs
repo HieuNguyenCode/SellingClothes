@@ -356,29 +356,7 @@ public class ComboService(
         }
     }
 
-    public async Task<ServiceResponse> DeleteComboAsync(Guid id)
-    {
-        var combo = await appDbContext.Combos
-            .Include(c => c.ComboProducts)
-            .FirstOrDefaultAsync(c => c.Idcombo == id);
-
-        if (combo == null)
-        {
-            return new ServiceResponse { Status = 404, Message = "Không tìm thấy Combo." };
-        }
-
-        if (combo.ComboProducts.Count > 0)
-        {
-            appDbContext.ComboProducts.RemoveRange(combo.ComboProducts);
-        }
-
-        appDbContext.Combos.Remove(combo);
-        await appDbContext.SaveChangesAsync();
-
-        return new ServiceResponse { Status = 200, Message = "Xóa Combo thành công." };
-    }
-
-    public async Task<ServiceResponse> PublishCombotAsync(Guid id, string? sub)
+    public async Task<ServiceResponse> DeleteComboAsync(Guid id, string? sub)
     {
         if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
         {
@@ -389,7 +367,34 @@ public class ComboService(
             };
         }
 
-        var combo = await appDbContext.Combos.FirstOrDefaultAsync(c => c.Idcombo == id);
+        var combo = await appDbContext.Combos
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(c => c.Idcombo == id);
+
+        if (combo == null)
+        {
+            return new ServiceResponse { Status = 404, Message = "Không tìm thấy Combo." };
+        }
+
+        combo.IsDeleted = !combo.IsDeleted;
+        combo.UpdateBy = userId;
+        await appDbContext.SaveChangesAsync();
+
+        return new ServiceResponse { Status = 200, Message = "Xóa Combo thành công." };
+    }
+
+    public async Task<ServiceResponse> PublishComboAsync(Guid id, string? sub)
+    {
+        if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var userId))
+        {
+            return new ServiceResponse
+            {
+                Status = 400,
+                Message = "Thông tin người dùng không hợp lệ"
+            };
+        }
+
+        var combo = await appDbContext.Combos.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Idcombo == id);
 
         if (combo == null)
         {
